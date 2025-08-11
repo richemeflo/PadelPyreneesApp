@@ -1,0 +1,22 @@
+{
+  "name": "PadelPyreneesApp",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Projet de PadelPyreneesApp",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev:web": "pnpm --filter web dev",
+    "dev:api": "pnpm --filter api dev",
+    "dev:mobile": "pnpm --filter mobile start",
+    "dev": "concurrently -c auto -n WEB,API 'pnpm dev:web' 'pnpm dev:api'"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.14.0"
+}
+
