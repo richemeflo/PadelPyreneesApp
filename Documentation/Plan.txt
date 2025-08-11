@@ -1,0 +1,337 @@
+Voici un plan détaillé, découpé en phases et sous‑tâches, avec des estimations de temps. Ce planning vise à t’aider à organiser ton projet en Kanban. Les estimations tiennent compte du fait que tu travailles seul ; elles peuvent varier selon ton expérience et ta disponibilité (les durées indiquées sont approximatives en jours ouvrés).
+
+Phase 1 : cadrage et préparation (≈ 1 semaine)
+Analyse des besoins détaillés (1 jour)
+
+Reprendre les spécifications et identifier les points flous.
+
+Lister les données nécessaires (champs utilisateurs, informations club, etc.).
+
+Établissement du planning et des priorités (1 jour)
+
+Définir un périmètre MVP (version minimale viable) avec les fonctionnalités essentielles.
+
+Affecter des dates cibles à chaque phase en fonction de tes disponibilités.
+
+Choix technologiques (1 jour)
+
+Confirmer le stack (React/Next.js, React Native, Node/Express, PostgreSQL).
+
+Sélectionner les bibliothèques (Leaflet, ORM Prisma, système d’authentification).
+
+Installation des outils de développement (1 jour)
+
+Configurer ton environnement local (Node.js, Docker, IDE).
+
+Créer les dépôts Git (web, mobile, backend) et mettre en place Git Flow.
+
+Maquettage rapide (2 jours)
+
+Créer des wireframes des pages principales : classement, matchmaking, réservations, tournois, missions.
+
+Valider le parcours utilisateur et ajuster si nécessaire.
+
+Phase 2 : préparation de la base (≈ 1 semaine)
+Conception du schéma de base de données (2 jours)
+
+Modéliser les tables principales (players, pairs, matches, tournaments, missions, etc.).
+
+Définir les relations, types et index (notamment géospatiaux).
+
+Initialisation du projet backend (2 jours)
+
+Créer l’API Express : structure des dossiers, configuration TypeScript si nécessaire.
+
+Installer l’ORM (Prisma ou TypeORM) et générer les entités.
+
+Configurer PostgreSQL en local (Docker compose).
+
+Intégration de l’authentification (2 jours)
+
+Choisir Keycloak ou Firebase Auth et mettre en place l’inscription/connexion.
+
+Définir les rôles (utilisateur, admin).
+
+Scripts de migration et seeding (1 jour)
+
+Écrire les migrations initiales.
+
+Créer des données de test (joueurs fictifs, courts, tournois).
+
+Phase 3 : développement backend (≈ 3 semaines)
+Découper chaque module en endpoints, services et modèles.
+
+Module Joueurs / Classement (5 jours)
+
+Endpoints CRUD pour les joueurs (/players).
+
+Calcul Elo : implémenter la formule et la table rating_history.
+
+Endpoints pour consulter et mettre à jour les classements.
+
+Module Matchmaking (5 jours)
+
+Endpoints pour les disponibilités (/availability_slots).
+
+Implémentation du moteur de recherche (différence Elo, distance via Haversine).
+
+Gestion des MatchSearchRequest, génération de MatchProposal.
+
+Endpoints pour accepter/refuser une proposition.
+
+Module Réservation (4 jours)
+
+Modèle court et reservation.
+
+Endpoints de suggestion et confirmation.
+
+Mock de l’intégration API externe (en attendant d’éventuels accords) et back‑office simplifié.
+
+Module Match / Validation (4 jours)
+
+Endpoints pour créer un match, enregistrer un score et valider.
+
+Gestion des contestations et litiges.
+
+Mise à jour du Elo et envoi des notifications.
+
+Module Tournois (3 jours)
+
+Endpoints pour lister, créer et s’inscrire à un tournoi.
+
+Vérification du niveau Elo et des places disponibles.
+
+Structure pour gérer l’arbre des matchs de tournoi.
+
+Module Gamification (3 jours)
+
+Modèle des missions et items.
+
+Endpoints pour récupérer les missions, reporter la progression, réclamer les récompenses.
+
+Gestion de l’inventaire d’objets.
+
+Prévoir du temps de relecture/refactoring (≈ 2 jours) en fin de phase.
+
+Phase 4 : développement frontend web (≈ 3 semaines)
+Initialisation (1 jour)
+
+Créer le projet Next.js, configurer le routing, mettre en place Tailwind CSS.
+
+Définir une architecture de composants (pages, composants partagés).
+
+Gestion de l’authentification (2 jours)
+
+Intégrer l’authentification (Keycloak/Firebase) avec persistance du token.
+
+Création des pages de login/inscription.
+
+Page de classement (2 jours)
+
+Afficher le top des joueurs et la fiche profil.
+
+Afficher le palier et la progression sous forme de graphiques.
+
+Matchmaking (4 jours)
+
+Formulaire pour définir ses disponibilités et lancer une recherche.
+
+Affichage des propositions (cartes) et gestion des acceptations/refus.
+
+Réservation de courts (3 jours)
+
+Affichage des suggestions de courts (liste + carte Leaflet).
+
+Confirmation de la réservation.
+
+Page tournois (3 jours)
+
+Liste filtrable et carte interactive des tournois.
+
+Formulaire d’inscription.
+
+Post‑match et avis (2 jours)
+
+Interface de saisie du score.
+
+Interface de notation des adversaires.
+
+Gamification et missions (3 jours)
+
+Tableau de bord des missions.
+
+Système d’avatars et d’inventaire.
+
+Notifications et temps réel (2 jours)
+
+Intégrer Socket.io pour les notifications instantanées.
+
+Gérer l’affichage des badges et animations.
+
+Phase 5 : développement de l’application mobile (≈ 3 semaines)
+Initialisation du projet React Native (1 jour)
+
+Mise en place d’Expo ou CLI, organisation des dossiers.
+
+Gestion de l’authentification (2 jours)
+
+Intégration de Keycloak/Firebase.
+
+Écrans de login/inscription.
+
+Navigation et structure (2 jours)
+
+Mise en place de la navigation (stack, tabs).
+
+Classement et profil (2 jours)
+
+Affichage du classement et des fiches joueurs.
+
+Matchmaking et réservation (4 jours)
+
+Écran de recherche de match (formulaire, résultats).
+
+Écran de réservation avec carte Leaflet (via react‑native‑maps + tiles OSM).
+
+Tournois (3 jours)
+
+Liste des tournois et carte.
+
+Inscription et affichage du tableau.
+
+Post‑match et avis (2 jours)
+
+Saisie du score et notation.
+
+Gamification (3 jours)
+
+Tableau de bord des missions.
+
+Boutique/avatars.
+
+Notifications push (2 jours)
+
+Configuration de Firebase Messaging.
+
+Gestion des notifications in‑app.
+
+Phase 6 : intégration de la géolocalisation et des cartes (≈ 1 semaine)
+Serveur Nominatim ou fournisseur tiers (1 jour)
+
+Installer Nominatim en local ou choisir un fournisseur (Geoapify, LocationIQ).
+
+Fonctions de géocodage (1 jour)
+
+Service backend pour convertir adresses en coordonnées et inversement.
+
+Gestion des distances (1 jour)
+
+Implémentation de la formule Haversine en backend et tests sur PostGIS.
+
+Intégration Leaflet (web) (1 jour)
+
+Composant carte, marqueurs des courts et tournois.
+
+Intégration React Native Maps (mobile) (2 jours)
+
+Affichage des cartes sur mobile.
+
+Gestion de la localisation de l’utilisateur.
+
+Phase 7 : tests, optimisation et qualité (≈ 2 semaines)
+Tests unitaires et d’intégration backend (3 jours)
+
+Ecrire des tests pour chaque endpoint (utiliser Jest/Supertest).
+
+Scénarios de validation, matchmaking, calcul Elo.
+
+Tests frontend automatisés (3 jours)
+
+Tests des composants React avec Testing Library.
+
+E2E (Cypress) sur quelques scénarios critiques (inscription, création d’un match, réservation).
+
+Tests mobile (3 jours)
+
+Tests sur simulateurs Android/iOS.
+
+Correction des problèmes d’UI et de performance.
+
+Optimisation et sécurité (3 jours)
+
+Vérifier la gestion des erreurs et la validation des données.
+
+Sécuriser les API (rate‑limiting, CORS, protection XSS/CSRF).
+
+Améliorer les performances (lazy load, pagination).
+
+Tests utilisateurs et retours (2 jours)
+
+Demander à des membres de PadelPyrennees de tester la bêta.
+
+Collecter les retours et prioriser les correctifs.
+
+Phase 8 : déploiement et mise en production (≈ 1 semaine)
+Infrastructure (2 jours)
+
+Mettre en place la base de données PostgreSQL sur un serveur production.
+
+Déployer les conteneurs API et front sur le serveur.
+
+Nom de domaine et HTTPS (1 jour)
+
+Configurer le domaine actuel de PadelPyrennees, activer HTTPS (Let’s Encrypt).
+
+CI/CD (2 jours)
+
+Script de build et de déploiement automatique via GitHub Actions.
+
+Tests automatiques avant déploiement.
+
+Publication des apps mobiles (2 jours)
+
+Générer les builds Android (APK/AAB).
+
+Préparer les stores (Play Store), créer les pages produit, soumettre l’app.
+
+Phase de transition du site (1 jour)
+
+Rediriger l’ancien site vers la nouvelle plateforme.
+
+Communiquer auprès des membres.
+
+Phase 9 : maintenance et évolutions (continu)
+Support et corrections de bugs
+
+Surveiller les logs et retours utilisateurs, corriger rapidement.
+
+Améliorations fonctionnelles
+
+Ajouter un chat in‑app, des salons de discussion, des avatars en 3D.
+
+Intégrer de nouvelles API de réservation selon les partenariats.
+
+Animation de la communauté
+
+Organiser des challenges réguliers, mettre à jour les missions.
+
+Analyser les statistiques d’utilisation pour ajuster l’algorithme de matchmaking.
+
+Répartition temporelle globale
+Pour un développeur seul travaillant à temps plein (~ 5 jours/semaine), ce projet représente environ 14 à 18 semaines :
+
+Phases 1 à 2 : 2 semaines
+
+Backend : 3 semaines
+
+Frontend web : 3 semaines
+
+Application mobile : 3 semaines
+
+Géolocalisation et cartes : 1 semaine
+
+Tests et optimisation : 2 semaines
+
+Déploiement : 1 semaine
+
+Ces estimations peuvent varier selon ton rythme et la complexité rencontrée. Il est recommandé de prioriser les fonctionnalités essentielles (inscription, création de match, classement) et de planifier les autres modules en second temps afin d’obtenir rapidement une version utilisable par l’association, puis d’ajouter les éléments de gamification et d’optimisation par itérations successives.
