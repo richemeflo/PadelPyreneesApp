@@ -1,2 +1,70 @@
-node_modules/*
-.editorconfig
+# --- Node / PNPM / JS ---
+node_modules/
+pnpm-debug.log*
+npm-debug.log*
+yarn-error.log*
+
+# --- Build / Cache ---
+dist/
+build/
+.cache/
+.tmp/
+coverage/
+.eslintcache
+.turbo/
+.parcel-cache/
+
+# --- Next.js (apps/web) ---
+.next/
+out/
+
+# --- React Native / Expo (apps/mobile) ---
+.expo/
+.expo-shared/
+android/.gradle/
+android/.cxx/
+android/local.properties
+android/app/build/
+android/build/
+ios/Pods/
+ios/build/
+ios/*.xcworkspace
+ios/*/xcuserdata/
+*.xcuserstate
+
+# --- Env / secrets ---
+.env
+.env.*
+!.env.example
+
+# --- IDE / OS ---
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+
+# --- Prisma ---
+# (garde migrations si tu les utilises)
+# prisma/dev.db
+# prisma/dev.db-journal
+
+# --- Docker / Postgres ---
+# On utilise des volumes nommés. Si tu as déjà un bind-mount, ignore-le :
+infra/docker/pgdata/
+pgdata/
+docker-data/
+
+# --- Images / assets temporaires ---
+*.log
+*.tmp
+
+# --- Expo autogénéré ---
+*.jks
+*.keystore
+*.p8
+*.p12
+*.key
+*.mobileprovision
