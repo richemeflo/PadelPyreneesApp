@@ -5,5 +5,7 @@ packages:
 ignoredBuiltDependencies:
   - '@prisma/engines'
 
+nodeLinker: hoisted
+
 onlyBuiltDependencies:
   - prisma
