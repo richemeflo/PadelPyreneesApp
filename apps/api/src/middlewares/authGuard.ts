@@ -1,5 +1,6 @@
 import { getAuth } from "firebase-admin/auth";
 import admin from "firebase-admin";
+import { Request, Response, NextFunction } from "express";
 
 if (!admin.apps.length) {
   admin.initializeApp({
@@ -11,7 +12,11 @@ if (!admin.apps.length) {
   });
 }
 
-export async function authGuard(req, res, next) {
+export async function authGuard(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   const auth = req.headers.authorization;
   if (!auth?.startsWith("Bearer ")) return res.status(401).send("No token");
   try {
