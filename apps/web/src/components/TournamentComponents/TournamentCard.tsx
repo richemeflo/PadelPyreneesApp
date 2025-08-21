@@ -1,8 +1,9 @@
+import * as React from 'react';
 import { Calendar, MapPin, Users, Trophy, Clock, Euro } from 'lucide-react';
-import { Card, CardContent, CardHeader } from './ui/card';
-import { Badge } from './ui/badge';
-import { Button } from './ui/button';
-import { Tournament } from '../types/tournament';
+import { Card, CardContent, CardHeader } from '../ui/card';
+import { Badge } from '../ui/badge';
+import { Button } from '../ui/button';
+import { Tournament } from '../../types/tournament';
 
 interface TournamentCardProps {
   tournament: Tournament;
@@ -154,7 +155,7 @@ export function TournamentCard({ tournament, onViewDetails, onRegister }: Tourna
             variant="outline" 
             size="sm" 
             className="flex-1"
-            onClick={(e) => {
+            onClick={(e: React.MouseEvent) => {
               e.stopPropagation();
               onViewDetails(tournament);
             }}
@@ -166,7 +167,7 @@ export function TournamentCard({ tournament, onViewDetails, onRegister }: Tourna
             <Button 
               size="sm" 
               className="flex-1"
-              onClick={(e) => {
+              onClick={(e: React.MouseEvent) => {
                 e.stopPropagation();
                 onRegister(tournament);
               }}
@@ -180,7 +181,7 @@ export function TournamentCard({ tournament, onViewDetails, onRegister }: Tourna
               variant="secondary" 
               size="sm" 
               className="flex-1"
-              onClick={(e) => {
+              onClick={(e: React.MouseEvent) => {
                 e.stopPropagation();
                 onViewDetails(tournament);
               }}
