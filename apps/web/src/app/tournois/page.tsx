@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useMemo } from 'react';
 import { Plus, Trophy, Calendar, Users, MapPin, Clock } from 'lucide-react';
 import { Card, CardContent } from '../../components/ui/card';
@@ -10,7 +12,7 @@ import { TournamentDetail } from '../../components/TournamentComponents/Tourname
 import { mockTournaments } from '../../data/tournamentData';
 import { Tournament, TournamentType, TournamentLevel, TournamentStatus, SortOption } from '../../types/tournament';
 
-export function TournamentPage() {
+export default function TournamentPage() {
   const [currentView, setCurrentView] = useState<'list' | 'detail'>('list');
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
   
