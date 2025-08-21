@@ -1,10 +1,10 @@
 import { Search, Filter, X, ArrowUpDown } from 'lucide-react';
-import { Input } from './ui/input';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Card, CardContent } from './ui/card';
-import { TournamentType, TournamentLevel, TournamentStatus, SortOption } from '../types/tournament';
+import { Input } from '../ui/input';
+import { Button } from '../ui/button';
+import { Badge } from '../ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Card, CardContent } from '../ui/card';
+import { TournamentType, TournamentLevel, TournamentStatus, SortOption } from '../../types/tournament';
 
 interface TournamentFiltersProps {
   searchQuery: string;

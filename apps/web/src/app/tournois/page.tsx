@@ -1,16 +1,18 @@
+"use client";
+
 import { useState, useMemo } from 'react';
 import { Plus, Trophy, Calendar, Users, MapPin, Clock } from 'lucide-react';
-import { Card, CardContent } from './ui/card';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
-import { toast } from 'sonner@2.0.3';
-import { TournamentCard } from './TournamentCard';
-import { TournamentFilters } from './TournamentFilters';
-import { TournamentDetail } from './TournamentDetail';
-import { mockTournaments } from '../data/tournamentData';
-import { Tournament, TournamentType, TournamentLevel, TournamentStatus, SortOption } from '../types/tournament';
+import { Card, CardContent } from '../../components/ui/card';
+import { Button } from '../../components/ui/button';
+import { Badge } from '../../components/ui/badge';
+import { toast } from 'sonner';
+import { TournamentCard } from '../../components/TournamentComponents/TournamentCard';
+import { TournamentFilters } from '../../components/TournamentComponents/TournamentFilters';
+import { TournamentDetail } from '../../components/TournamentComponents/TournamentDetail';
+import { mockTournaments } from '../../data/tournamentData';
+import { Tournament, TournamentType, TournamentLevel, TournamentStatus, SortOption } from '../../types/tournament';
 
-export function TournamentPage() {
+export default function TournamentPage() {
   const [currentView, setCurrentView] = useState<'list' | 'detail'>('list');
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
   

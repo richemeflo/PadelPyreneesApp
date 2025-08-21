@@ -1,17 +1,17 @@
 import { useState } from 'react';
 import { Calendar, MapPin, Users, Trophy, Euro, Clock, Share2, UserPlus, Download, ArrowLeft } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Badge } from './ui/badge';
-import { Button } from './ui/button';
-import { Separator } from './ui/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
-import { Input } from './ui/input';
-import { Textarea } from './ui/textarea';
-import { toast } from 'sonner@2.0.3';
-import { Tournament } from '../types/tournament';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Badge } from '../ui/badge';
+import { Button } from '../ui/button';
+import { Separator } from '../ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
+import { Input } from '../ui/input';
+import { Textarea } from '../ui/textarea';
+import { toast } from 'sonner';
+import { Tournament } from '../../types/tournament';
 import { TournamentBracket } from './TournamentBracket';
-import { sampleBracket } from '../data/tournamentData';
+import { sampleBracket } from '../../data/tournamentData';
 
 interface TournamentDetailProps {
   tournament: Tournament;
