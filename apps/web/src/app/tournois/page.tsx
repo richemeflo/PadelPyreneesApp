@@ -1,104 +1,284 @@
-import TournamentCard, { Tournament } from "@/components/TournamentCard";
+import { useState, useMemo } from 'react';
+import { Plus, Trophy, Calendar, Users, MapPin, Clock } from 'lucide-react';
+import { Card, CardContent } from './ui/card';
+import { Button } from './ui/button';
+import { Badge } from './ui/badge';
+import { toast } from 'sonner@2.0.3';
+import { TournamentCard } from './TournamentCard';
+import { TournamentFilters } from './TournamentFilters';
+import { TournamentDetail } from './TournamentDetail';
+import { mockTournaments } from '../data/tournamentData';
+import { Tournament, TournamentType, TournamentLevel, TournamentStatus, SortOption } from '../types/tournament';
 
-const tournaments: Tournament[] = [
-  {
-    id: 1,
-    title: "Tournoi Mixte Halloween",
-    image: "https://images.unsplash.com/photo-1603279091656-1433c0af5004?auto=format&fit=crop&w=800&q=60",
-    type: "Mixte",
-    status: "Inscription ouverte",
-    date: "24 oct. - 27 oct. 2024",
-    level: "Niveau 3",
-    participants: "32 participants",
-    price: "20€ / joueur",
-    reward: "500€ + Trophée",
-  },
-  {
-    id: 2,
-    title: "Championnat d'Automne",
-    image: "https://images.unsplash.com/photo-1598974578018-9d1d7d6f928d?auto=format&fit=crop&w=800&q=60",
-    type: "Individuel",
-    status: "Inscription ouverte",
-    date: "12 nov. - 15 nov. 2024",
-    level: "Niveau 4",
-    participants: "24 participants",
-    price: "30€ / joueur",
-    reward: "300€ + Trophée",
-  },
-  {
-    id: 3,
-    title: "Open des Débutants",
-    image: "https://images.unsplash.com/photo-1521412644187-c49fa049e84d?auto=format&fit=crop&w=800&q=60",
-    type: "Débutant",
-    status: "Complet",
-    date: "29 nov. - 3 déc. 2024",
-    level: "Niveau 1",
-    participants: "16 participants",
-    price: "10€ / joueur",
-    reward: "Lots",
-  },
-  {
-    id: 4,
-    title: "Corporate Challenge",
-    image: "https://images.unsplash.com/photo-1508606572321-901ea4437071?auto=format&fit=crop&w=800&q=60",
-    type: "Entreprise",
-    status: "Inscription ouverte",
-    date: "25 nov. 2024",
-    level: "Tous niveaux",
-    participants: "40 participants",
-    price: "Gratuit",
-    reward: "Trophée",
-  },
-];
+export function TournamentPage() {
+  const [currentView, setCurrentView] = useState<'list' | 'detail'>('list');
+  const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
+  
+  // États pour les filtres
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedType, setSelectedType] = useState<TournamentType>('all');
+  const [selectedLevel, setSelectedLevel] = useState<TournamentLevel>('all');
+  const [selectedStatus, setSelectedStatus] = useState<TournamentStatus>('all');
+  const [sortBy, setSortBy] = useState<SortOption>('date');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
-export default function TournoisPage() {
+  // Filtres et tri des tournois
+  const filteredAndSortedTournaments = useMemo(() => {
+    let filtered = mockTournaments.filter(tournament => {
+      // Filtre par recherche
+      const matchesSearch = 
+        tournament.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        tournament.location.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        tournament.location.address.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      // Filtre par type
+      const matchesType = selectedType === 'all' || tournament.type === selectedType;
+      
+      // Filtre par niveau
+      const matchesLevel = selectedLevel === 'all' || tournament.level === selectedLevel;
+      
+      // Filtre par statut
+      const matchesStatus = selectedStatus === 'all' || tournament.status === selectedStatus;
+      
+      return matchesSearch && matchesType && matchesLevel && matchesStatus;
+    });
+
+    // Tri
+    filtered.sort((a, b) => {
+      let comparison = 0;
+      
+      switch (sortBy) {
+        case 'date':
+          comparison = new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+          break;
+        case 'title':
+          comparison = a.title.localeCompare(b.title);
+          break;
+        case 'level':
+          const levelOrder = { 'débutant': 1, 'intermédiaire': 2, 'avancé': 3, 'expert': 4 };
+          comparison = levelOrder[a.level] - levelOrder[b.level];
+          break;
+        case 'participants':
+          comparison = a.currentParticipants - b.currentParticipants;
+          break;
+        default:
+          comparison = 0;
+      }
+      
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+
+    return filtered;
+  }, [searchQuery, selectedType, selectedLevel, selectedStatus, sortBy, sortOrder]);
+
+  const hasActiveFilters = 
+    searchQuery !== '' || 
+    selectedType !== 'all' || 
+    selectedLevel !== 'all' || 
+    selectedStatus !== 'all';
+
+  const handleClearFilters = () => {
+    setSearchQuery('');
+    setSelectedType('all');
+    setSelectedLevel('all');
+    setSelectedStatus('all');
+  };
+
+  const handleViewDetails = (tournament: Tournament) => {
+    setSelectedTournament(tournament);
+    setCurrentView('detail');
+  };
+
+  const handleBackToList = () => {
+    setCurrentView('list');
+    setSelectedTournament(null);
+  };
+
+  const handleRegister = (tournament: Tournament) => {
+    // Simulation d'inscription
+    toast.success(`Inscription au tournoi "${tournament.title}" confirmée !`);
+  };
+
+  // Statistiques rapides
+  const stats = {
+    total: mockTournaments.length,
+    openRegistration: mockTournaments.filter(t => t.status === 'registration').length,
+    upcoming: mockTournaments.filter(t => t.status === 'upcoming').length,
+    ongoing: mockTournaments.filter(t => t.status === 'ongoing').length
+  };
+
+  if (currentView === 'detail' && selectedTournament) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <TournamentDetail 
+          tournament={selectedTournament}
+          onBack={handleBackToList}
+          onRegister={handleRegister}
+        />
+      </div>
+    );
+  }
+
   return (
-    <main className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-2">Tournois</h1>
-      <p className="text-gray-600 mb-6">
-        Participez aux tournois et compétitions de padel
-      </p>
-
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        <div className="text-center p-4 border rounded-lg">
-          <p className="text-2xl font-bold">6</p>
-          <p className="text-sm text-gray-600">Tournois</p>
-        </div>
-        <div className="text-center p-4 border rounded-lg">
-          <p className="text-2xl font-bold">2</p>
-          <p className="text-sm text-gray-600">Inscription ouverte</p>
-        </div>
-        <div className="text-center p-4 border rounded-lg">
-          <p className="text-2xl font-bold">1</p>
-          <p className="text-sm text-gray-600">En cours</p>
-        </div>
+    <div className="container mx-auto px-4 py-8 space-y-8">
+      {/* En-tête avec statistiques */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <Card>
+          <CardContent className="p-4 text-center">
+            <Trophy className="h-8 w-8 mx-auto mb-2 text-primary" />
+            <p className="text-2xl">{stats.total}</p>
+            <p className="text-sm text-muted-foreground">Total tournois</p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4 text-center">
+            <Calendar className="h-8 w-8 mx-auto mb-2 text-green-500" />
+            <p className="text-2xl">{stats.openRegistration}</p>
+            <p className="text-sm text-muted-foreground">Inscriptions ouvertes</p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4 text-center">
+            <Clock className="h-8 w-8 mx-auto mb-2 text-blue-500" />
+            <p className="text-2xl">{stats.upcoming}</p>
+            <p className="text-sm text-muted-foreground">À venir</p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4 text-center">
+            <Users className="h-8 w-8 mx-auto mb-2 text-orange-500" />
+            <p className="text-2xl">{stats.ongoing}</p>
+            <p className="text-sm text-muted-foreground">En cours</p>
+          </CardContent>
+        </Card>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
-        <div className="flex flex-wrap gap-2">
-          <button className="px-3 py-1 rounded-full border text-sm">
-            Inscriptions ouvertes
-          </button>
-          <button className="px-3 py-1 rounded-full border text-sm">
-            Inscriptions fermées
-          </button>
-          <button className="px-3 py-1 rounded-full border text-sm">Niveau</button>
-          <button className="px-3 py-1 rounded-full border text-sm">Date</button>
+      {/* Actions principales */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h2 className="mb-2">🏆 Tous les Tournois</h2>
+          <p className="text-muted-foreground">
+            Découvrez et participez aux tournois de padel près de chez vous
+          </p>
         </div>
+        
         <div className="flex gap-2">
-          <button className="px-3 py-1 rounded-full border text-sm">Carte</button>
-          <button className="px-3 py-1 rounded-full bg-blue-600 text-white text-sm">
+          <Button variant="outline">
+            <MapPin className="h-4 w-4 mr-2" />
+            Carte
+          </Button>
+          <Button>
+            <Plus className="h-4 w-4 mr-2" />
             Organiser un tournoi
-          </button>
+          </Button>
         </div>
       </div>
 
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {tournaments.map((t) => (
-          <TournamentCard key={t.id} tournament={t} />
-        ))}
+      {/* Filtres */}
+      <TournamentFilters
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        selectedType={selectedType}
+        onTypeChange={setSelectedType}
+        selectedLevel={selectedLevel}
+        onLevelChange={setSelectedLevel}
+        selectedStatus={selectedStatus}
+        onStatusChange={setSelectedStatus}
+        sortBy={sortBy}
+        onSortChange={setSortBy}
+        sortOrder={sortOrder}
+        onSortOrderChange={setSortOrder}
+        onClearFilters={handleClearFilters}
+        hasActiveFilters={hasActiveFilters}
+      />
+
+      {/* Badges de filtres rapides */}
+      <div className="flex flex-wrap gap-2">
+        <Button 
+          variant={selectedStatus === 'registration' ? 'default' : 'outline'} 
+          size="sm"
+          onClick={() => setSelectedStatus(selectedStatus === 'registration' ? 'all' : 'registration')}
+        >
+          ✅ Inscriptions ouvertes
+        </Button>
+        <Button 
+          variant={selectedLevel === 'débutant' ? 'default' : 'outline'} 
+          size="sm"
+          onClick={() => setSelectedLevel(selectedLevel === 'débutant' ? 'all' : 'débutant')}
+        >
+          🟢 Débutants
+        </Button>
+        <Button 
+          variant={selectedType === 'mixed' ? 'default' : 'outline'} 
+          size="sm"
+          onClick={() => setSelectedType(selectedType === 'mixed' ? 'all' : 'mixed')}
+        >
+          👫 Mixte
+        </Button>
       </div>
-    </main>
+
+      {/* Résultats */}
+      <div className="flex items-center justify-between">
+        <p className="text-muted-foreground">
+          {filteredAndSortedTournaments.length} tournoi(s) trouvé(s)
+        </p>
+        
+        {hasActiveFilters && (
+          <Badge variant="secondary" className="flex items-center gap-1">
+            Filtres actifs
+          </Badge>
+        )}
+      </div>
+
+      {/* Grille des tournois */}
+      {filteredAndSortedTournaments.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredAndSortedTournaments.map((tournament) => (
+            <TournamentCard
+              key={tournament.id}
+              tournament={tournament}
+              onViewDetails={handleViewDetails}
+              onRegister={handleRegister}
+            />
+          ))}
+        </div>
+      ) : (
+        <Card>
+          <CardContent className="p-12 text-center">
+            <Trophy className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <h3 className="mb-2">Aucun tournoi trouvé</h3>
+            <p className="text-muted-foreground mb-4">
+              Aucun tournoi ne correspond à vos critères de recherche.
+            </p>
+            <Button variant="outline" onClick={handleClearFilters}>
+              Réinitialiser les filtres
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Section promotion */}
+      <Card className="bg-gradient-to-r from-primary/10 to-blue-500/10 border-primary/20">
+        <CardContent className="p-8 text-center">
+          <Trophy className="h-12 w-12 mx-auto mb-4 text-primary" />
+          <h3 className="mb-2">Organisez votre propre tournoi</h3>
+          <p className="text-muted-foreground mb-6">
+            Créez et gérez facilement vos tournois de padel avec nos outils dédiés
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Créer un tournoi
+            </Button>
+            <Button variant="outline">
+              En savoir plus
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
-
