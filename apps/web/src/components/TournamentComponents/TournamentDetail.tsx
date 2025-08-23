@@ -46,7 +46,11 @@ export function TournamentDetail({ tournament, onBack, onRegister }: TournamentD
       case 'registration':
         return <Badge className="bg-green-500">Inscriptions ouvertes</Badge>;
       case 'upcoming':
-        return <Badge variant="secondary">À venir</Badge>;
+        return (
+          <Badge variant="secondary" className="flex items-center gap-1">
+            <Clock className="h-3 w-3" /> À venir
+          </Badge>
+        );
       case 'ongoing':
         return (
           <Badge variant="destructive">
@@ -185,7 +189,7 @@ export function TournamentDetail({ tournament, onBack, onRegister }: TournamentD
                   onChange={(e) => setInviteMessage(e.target.value)}
                 />
                 <Button onClick={handleInvite} className="w-full">
-                  Envoyer l'invitation
+                  Envoyer l&apos;invitation
                 </Button>
               </div>
             </DialogContent>

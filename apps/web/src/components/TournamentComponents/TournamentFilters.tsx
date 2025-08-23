@@ -1,4 +1,4 @@
-import { Search, Filter, X, ArrowUpDown } from 'lucide-react';
+import { Search, X, ArrowUpDown, Clock } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -57,7 +57,14 @@ export function TournamentFilters({
   const statusOptions = [
     { value: 'all', label: 'Tous les statuts' },
     { value: 'registration', label: '✅ Inscriptions ouvertes' },
-    { value: 'upcoming', label: '⏳ À venir' },
+    {
+      value: 'upcoming',
+      label: (
+        <span className="flex items-center gap-1">
+          <Clock className="h-4 w-4" /> À venir
+        </span>
+      )
+    },
     { value: 'ongoing', label: '⌛ En cours' },
     { value: 'completed', label: '🏆 Terminés' }
   ];
