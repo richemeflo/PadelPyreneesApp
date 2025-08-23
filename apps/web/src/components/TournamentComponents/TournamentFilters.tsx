@@ -65,7 +65,7 @@ export function TournamentFilters({
         </span>
       )
     },
-    { value: 'ongoing', label: '🔴 En cours' },
+    { value: 'ongoing', label: '⌛ En cours' },
     { value: 'completed', label: '🏆 Terminés' }
   ];
 
