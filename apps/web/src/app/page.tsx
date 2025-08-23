@@ -1,103 +1,222 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useState } from "react";
+import { Plus } from "lucide-react@0.487.0";
+
+import { Card, CardContent } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "../components/ui/carousel";
+
+interface Event {
+  id: string;
+  title: string;
+  date: string;
+}
+
+interface Match {
+  id: string;
+  opponent: string;
+  date: string;
+  location: string;
+}
+
+interface UserTournament {
+  id: string;
+  title: string;
+  date: string;
+  location: string;
+}
+
+interface Mission {
+  id: string;
+  title: string;
+  frequency: "quotidienne" | "hebdomadaire" | "mensuelle" | "saison";
+}
+
+const mockEvents: Event[] = [
+  { id: "1", title: "Padel Night", date: "10/08/2024" },
+  { id: "2", title: "Tournoi de l'été", date: "20/08/2024" },
+  { id: "3", title: "Stage Jeunes", date: "25/08/2024" },
+];
+
+const upcomingMatches: Match[] = [
+  { id: "m1", opponent: "Alice/Bob", date: "05/08/2024 18:00", location: "Toulouse" },
+  { id: "m2", opponent: "Charlie/Dave", date: "07/08/2024 19:30", location: "Pau" },
+];
+
+const upcomingTournaments: UserTournament[] = [
+  { id: "t1", title: "Open de Toulouse", date: "10/09/2024", location: "Toulouse" },
+];
+
+const pastMatchesToDeclare: Match[] = [
+  { id: "m3", opponent: "Eve/Frank", date: "20/07/2024", location: "Tarbes" },
+];
+
+const missions: Mission[] = [
+  { id: "mission1", title: "Gagner un match", frequency: "quotidienne" },
+  { id: "mission2", title: "Jouer 3 matchs", frequency: "hebdomadaire" },
+  { id: "mission3", title: "Inviter un ami", frequency: "mensuelle" },
+  { id: "mission4", title: "Participer à un tournoi", frequency: "saison" },
+];
+
+export default function HomePage() {
+  const [missionFilter, setMissionFilter] = useState<Mission["frequency"]>("quotidienne");
+
+  const userStats = {
+    elo: 1520,
+    scheduledMatches: upcomingMatches.length,
+    scheduledTournaments: upcomingTournaments.length,
+    resultsToDeclare: pastMatchesToDeclare.length,
+  };
+
+  const filteredMissions = missions.filter((m) => m.frequency === missionFilter);
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="container mx-auto px-4 py-8 space-y-8">
+      {/* Section 1: Mes informations */}
+      <section>
+        <h2 className="mb-4">Mes informations</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="p-4 text-center">
+              <p className="text-2xl font-bold">{userStats.elo}</p>
+              <p className="text-sm text-muted-foreground">Elo</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 text-center">
+              <p className="text-2xl font-bold">{userStats.scheduledMatches}</p>
+              <p className="text-sm text-muted-foreground">Matchs prévus</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 text-center">
+              <p className="text-2xl font-bold">{userStats.scheduledTournaments}</p>
+              <p className="text-sm text-muted-foreground">Tournois prévus</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 text-center">
+              <p className="text-2xl font-bold">{userStats.resultsToDeclare}</p>
+              <p className="text-sm text-muted-foreground">Résultats à déclarer</p>
+            </CardContent>
+          </Card>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </section>
+
+      {/* Section 2: Événements Padel Pyrénées */}
+      {mockEvents.length > 0 && (
+        <section>
+          <h2 className="mb-4">Événements Padel Pyrénées</h2>
+          <Carousel className="w-full">
+            <CarouselContent>
+              {mockEvents.map((event) => (
+                <CarouselItem key={event.id} className="md:basis-1/3">
+                  <Card>
+                    <CardContent className="p-6 flex flex-col items-center justify-center">
+                      <p className="font-semibold">{event.title}</p>
+                      <p className="text-sm text-muted-foreground">{event.date}</p>
+                    </CardContent>
+                  </Card>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious />
+            <CarouselNext />
+          </Carousel>
+        </section>
+      )}
+
+      {/* Section 3: Partie(s) prévue(s) */}
+      {upcomingMatches.length > 0 && (
+        <section>
+          <h2 className="mb-4">Partie(s) prévue(s)</h2>
+          <div className="space-y-4">
+            {upcomingMatches.map((match) => (
+              <Card key={match.id}>
+                <CardContent className="p-4">
+                  <p className="font-semibold">{match.opponent}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {match.date} - {match.location}
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Section 4: Tournoi(s) prévu(s) */}
+      {upcomingTournaments.length > 0 && (
+        <section>
+          <h2 className="mb-4">Tournoi(s) prévu(s)</h2>
+          <div className="space-y-4">
+            {upcomingTournaments.map((tournament) => (
+              <Card key={tournament.id}>
+                <CardContent className="p-4">
+                  <p className="font-semibold">{tournament.title}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {tournament.date} - {tournament.location}
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Section 5: Déclarer le(s) résultat(s) */}
+      <section>
+        <h2 className="mb-4">Déclarer le(s) résultat(s)</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {pastMatchesToDeclare.map((match) => (
+            <Card key={match.id} className="cursor-pointer">
+              <CardContent className="p-4">
+                <p className="font-semibold">{match.opponent}</p>
+                <p className="text-sm text-muted-foreground">{match.date}</p>
+              </CardContent>
+            </Card>
+          ))}
+          <Card className="flex items-center justify-center cursor-pointer">
+            <CardContent className="p-6 flex items-center justify-center">
+              <Plus className="h-8 w-8 text-muted-foreground" />
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+
+      {/* Section 6: Missions */}
+      <section>
+        <h2 className="mb-4">Missions</h2>
+        <div className="flex gap-2 mb-4">
+          {(["quotidienne", "hebdomadaire", "mensuelle", "saison"] as const).map((freq) => (
+            <Button
+              key={freq}
+              variant={missionFilter === freq ? "default" : "outline"}
+              size="sm"
+              onClick={() => setMissionFilter(freq)}
+            >
+              {freq.charAt(0).toUpperCase() + freq.slice(1)}
+            </Button>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {filteredMissions.map((mission) => (
+            <Card key={mission.id}>
+              <CardContent className="p-4">
+                <p className="font-semibold">{mission.title}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
+
