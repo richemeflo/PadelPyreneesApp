@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from 'react';
-import { Plus, Trophy, Calendar, Users, MapPin, Clock } from 'lucide-react';
+import { Plus, Trophy, Calendar, Hourglass, MapPin, Clock } from 'lucide-react';
 import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
@@ -168,7 +168,7 @@ export default function TournamentPage() {
         
         <Card>
           <CardContent className="p-4 text-center">
-            <Users className="h-8 w-8 mx-auto mb-2 text-orange-500" />
+            <Hourglass className="h-8 w-8 mx-auto mb-2 text-orange-500" />
             <p className="text-2xl">{stats.ongoing}</p>
             <p className="text-sm text-muted-foreground">En cours</p>
           </CardContent>

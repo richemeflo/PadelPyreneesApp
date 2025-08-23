@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Calendar, MapPin, Users, Trophy, Clock, Euro } from 'lucide-react';
+import { Calendar, MapPin, Users, Trophy, Clock, Euro, Hourglass } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -19,7 +19,11 @@ export function TournamentCard({ tournament, onViewDetails, onRegister }: Tourna
       case 'upcoming':
         return <Badge variant="secondary">À venir</Badge>;
       case 'ongoing':
-        return <Badge variant="destructive">En cours</Badge>;
+        return (
+          <Badge variant="destructive">
+            <Hourglass className="h-4 w-4" />
+          </Badge>
+        );
       case 'completed':
         return <Badge variant="outline">Terminé</Badge>;
       default:

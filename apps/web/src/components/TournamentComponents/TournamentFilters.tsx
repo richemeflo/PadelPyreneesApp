@@ -58,7 +58,7 @@ export function TournamentFilters({
     { value: 'all', label: 'Tous les statuts' },
     { value: 'registration', label: '✅ Inscriptions ouvertes' },
     { value: 'upcoming', label: '⏳ À venir' },
-    { value: 'ongoing', label: '🔴 En cours' },
+    { value: 'ongoing', label: '⌛ En cours' },
     { value: 'completed', label: '🏆 Terminés' }
   ];
 
