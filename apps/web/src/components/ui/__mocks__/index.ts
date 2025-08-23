@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, react/display-name */
 import React from 'react';
 
 const components: any = new Proxy({}, {

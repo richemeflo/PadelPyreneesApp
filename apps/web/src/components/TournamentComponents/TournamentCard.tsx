@@ -17,7 +17,11 @@ export function TournamentCard({ tournament, onViewDetails, onRegister }: Tourna
       case 'registration':
         return <Badge variant="default" className="bg-green-500">Inscriptions ouvertes</Badge>;
       case 'upcoming':
-        return <Badge variant="secondary">À venir</Badge>;
+        return (
+          <Badge variant="secondary" className="flex items-center gap-1">
+            <Clock className="h-3 w-3" /> À venir
+          </Badge>
+        );
       case 'ongoing':
         return <Badge variant="destructive">En cours</Badge>;
       case 'completed':
@@ -164,17 +168,17 @@ export function TournamentCard({ tournament, onViewDetails, onRegister }: Tourna
           </Button>
           
           {tournament.status === 'registration' && onRegister && (
-            <Button 
-              size="sm" 
-              className="flex-1"
-              onClick={(e: React.MouseEvent) => {
-                e.stopPropagation();
-                onRegister(tournament);
-              }}
-            >
-              S'inscrire
-            </Button>
-          )}
+              <Button
+                size="sm"
+                className="flex-1"
+                onClick={(e: React.MouseEvent) => {
+                  e.stopPropagation();
+                  onRegister(tournament);
+                }}
+              >
+                S&apos;inscrire
+              </Button>
+              )}
           
           {tournament.status === 'completed' && (
             <Button 

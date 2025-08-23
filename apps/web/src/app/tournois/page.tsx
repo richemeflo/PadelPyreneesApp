@@ -183,7 +183,7 @@ export default function TournamentPage() {
             variant={myFilter === 'upcoming' ? 'default' : 'outline'}
             onClick={() => setMyFilter('upcoming')}
           >
-            ⏳ À venir
+            <Clock className="mr-2 h-4 w-4" /> À venir
           </Button>
           <Button
             variant={myFilter === 'completed' ? 'default' : 'outline'}
