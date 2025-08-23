@@ -15,6 +15,18 @@ import { Tournament, TournamentType, TournamentLevel, TournamentStatus, SortOpti
 export default function TournamentPage() {
   const [currentView, setCurrentView] = useState<'list' | 'detail'>('list');
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
+  const [registeredTournamentIds, setRegisteredTournamentIds] = useState<Set<string>>(new Set());
+  const [myFilter, setMyFilter] = useState<'upcoming' | 'completed'>('upcoming');
+
+  const myTournaments = useMemo(() => {
+    return mockTournaments.filter(t => registeredTournamentIds.has(t.id));
+  }, [registeredTournamentIds]);
+
+  const myFilteredTournaments = useMemo(() => {
+    return myTournaments.filter(t =>
+      myFilter === 'upcoming' ? t.status !== 'completed' : t.status === 'completed'
+    );
+  }, [myFilter, myTournaments]);
   
   // États pour les filtres
   const [searchQuery, setSearchQuery] = useState('');
@@ -26,7 +38,7 @@ export default function TournamentPage() {
 
   // Filtres et tri des tournois
   const filteredAndSortedTournaments = useMemo(() => {
-    let filtered = mockTournaments.filter(tournament => {
+    const filtered = mockTournaments.filter(tournament => {
       // Filtre par recherche
       const matchesSearch = 
         tournament.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -99,6 +111,11 @@ export default function TournamentPage() {
   const handleRegister = (tournament: Tournament) => {
     // Simulation d'inscription
     toast.success(`Inscription au tournoi "${tournament.title}" confirmée !`);
+    setRegisteredTournamentIds(prev => {
+      const newSet = new Set(prev);
+      newSet.add(tournament.id);
+      return newSet;
+    });
   };
 
   // Statistiques rapides
@@ -156,6 +173,49 @@ export default function TournamentPage() {
             <p className="text-sm text-muted-foreground">En cours</p>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Mes Tournois */}
+      <div>
+        <h2 className="mb-4">🎾 Mes Tournois</h2>
+        <div className="flex gap-2 mb-4">
+          <Button
+            variant={myFilter === 'upcoming' ? 'default' : 'outline'}
+            onClick={() => setMyFilter('upcoming')}
+          >
+            ⏳ À venir
+          </Button>
+          <Button
+            variant={myFilter === 'completed' ? 'default' : 'outline'}
+            onClick={() => setMyFilter('completed')}
+          >
+            🏁 Terminé
+          </Button>
+        </div>
+
+        {myFilteredTournaments.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            {myFilteredTournaments.map((tournament) => (
+              <TournamentCard
+                key={tournament.id}
+                tournament={tournament}
+                onViewDetails={handleViewDetails}
+                onRegister={handleRegister}
+              />
+            ))}
+          </div>
+        ) : (
+          <Card className="mb-8">
+            <CardContent className="p-12 text-center">
+              <Trophy className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="mb-2">
+                {myFilter === 'upcoming'
+                  ? 'Vous êtes inscrit à aucun tournois à venir'
+                  : 'Vous êtes inscrit à aucun tournois passé'}
+              </h3>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Actions principales */}

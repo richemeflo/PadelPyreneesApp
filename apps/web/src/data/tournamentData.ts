@@ -36,6 +36,24 @@ export const mockTournaments: Tournament[] = [
     maxParticipants: 24,
     entryFee: 30,
     prizes: { first: '500€', second: '250€', third: '100€' }
+  },
+  {
+    id: '3',
+    title: 'Championnat de Lyon',
+    description: 'Finale annuelle',
+    image: '/images/lyon.jpg',
+    type: 'doubles',
+    level: 'intermédiaire',
+    status: 'completed',
+    startDate: '2025-04-01',
+    endDate: '2025-04-02',
+    registrationDeadline: '2025-03-20',
+    location: { name: 'Club de Lyon', address: '789 Rue de Lyon', lat: 45.764, lng: 4.8357 },
+    organizer: { name: 'Lyon Padel', contact: 'contact@lyonpadel.fr' },
+    currentParticipants: 16,
+    maxParticipants: 16,
+    entryFee: 25,
+    prizes: { first: '300€', second: '150€', third: '75€' }
   }
 ];
 
