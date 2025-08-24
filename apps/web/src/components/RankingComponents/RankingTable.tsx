@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
-import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
+import { PlayerAvatar } from '../PlayerAvatar';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
@@ -120,10 +120,12 @@ export function RankingTable({ players }: RankingTableProps) {
               
               <TableCell>
                 <div className="flex items-center gap-3">
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage src={player.avatar} alt={player.pseudo} />
-                    <AvatarFallback>{player.pseudo.substring(0, 2).toUpperCase()}</AvatarFallback>
-                  </Avatar>
+                  <PlayerAvatar
+                    src={player.avatar}
+                    alt={player.pseudo}
+                    name={player.pseudo}
+                    className="h-10 w-10"
+                  />
                   <div>
                     <div>{player.pseudo}</div>
                     <div className="text-sm text-muted-foreground">{player.gender}</div>
