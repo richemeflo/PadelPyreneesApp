@@ -11,6 +11,7 @@ import { PlayerWithHistory, FilterPeriod } from '../../types/player';
 import { mockPlayers } from '../../data/playerData';
 import { EloChart } from '../../components/RankingComponents/EloChart';
 import { getWinRate, getEvolutionIcon } from '../../components/RankingComponents/utils';
+import { getInitials } from '../../utils/player';
 
 export default function RankingPage() {
   const currentUser: PlayerWithHistory = mockPlayers[0];
@@ -66,7 +67,7 @@ export default function RankingPage() {
             <div className="flex items-center gap-4 mb-6">
               <Avatar className="h-16 w-16">
                 <AvatarImage src={currentUser.avatar} alt={currentUser.pseudo} />
-                <AvatarFallback>{currentUser.pseudo.substring(0, 2).toUpperCase()}</AvatarFallback>
+                <AvatarFallback>{getInitials(currentUser.pseudo)}</AvatarFallback>
               </Avatar>
               <div>
                 <h3>{currentUser.pseudo}</h3>

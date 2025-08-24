@@ -4,6 +4,7 @@ import { Badge } from '../ui/badge';
 import { Trophy } from 'lucide-react';
 import { PlayerWithHistory } from '../../types/player';
 import { getWinRate, getEvolutionIcon } from './utils';
+import { getInitials } from '../../utils/player';
 
 interface TopPlayersCardsProps {
   players: PlayerWithHistory[];
@@ -42,7 +43,7 @@ export function TopPlayersCards({ players }: TopPlayersCardsProps) {
             <div className="flex flex-col items-center text-center">
               <Avatar className="h-16 w-16 mb-3">
                 <AvatarImage src={player.avatar} alt={player.pseudo} />
-                <AvatarFallback>{player.pseudo.substring(0, 2).toUpperCase()}</AvatarFallback>
+                <AvatarFallback>{getInitials(player.pseudo)}</AvatarFallback>
               </Avatar>
               
               <h3 className="mb-1">{player.pseudo}</h3>

@@ -6,6 +6,7 @@ import { Button } from '../ui/button';
 import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { PlayerWithHistory, SortField, SortDirection } from '../../types/player';
 import { getWinRate, getEvolutionIcon } from './utils';
+import { getInitials } from '../../utils/player';
 
 interface RankingTableProps {
   players: PlayerWithHistory[];
@@ -122,7 +123,7 @@ export function RankingTable({ players }: RankingTableProps) {
                 <div className="flex items-center gap-3">
                   <Avatar className="h-10 w-10">
                     <AvatarImage src={player.avatar} alt={player.pseudo} />
-                    <AvatarFallback>{player.pseudo.substring(0, 2).toUpperCase()}</AvatarFallback>
+                    <AvatarFallback>{getInitials(player.pseudo)}</AvatarFallback>
                   </Avatar>
                   <div>
                     <div>{player.pseudo}</div>
