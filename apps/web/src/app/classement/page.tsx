@@ -11,6 +11,7 @@ import { PlayerWithHistory, FilterPeriod } from '../../types/player';
 import { mockPlayers } from '../../data/playerData';
 import { EloChart } from '../../components/RankingComponents/EloChart';
 import { getWinRate, getEvolutionIcon } from '../../components/RankingComponents/utils';
+import { getInitials } from '../../utils/player';
 
 export default function RankingPage() {
   const currentUser: PlayerWithHistory = mockPlayers[0];

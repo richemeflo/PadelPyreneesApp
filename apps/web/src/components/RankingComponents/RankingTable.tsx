@@ -6,6 +6,7 @@ import { Button } from '../ui/button';
 import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { PlayerWithHistory, SortField, SortDirection } from '../../types/player';
 import { getWinRate, getEvolutionIcon } from './utils';
+import { getInitials } from '../../utils/player';
 
 interface RankingTableProps {
   players: PlayerWithHistory[];
