@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
-import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
-import { Badge } from './ui/badge';
-import { Button } from './ui/button';
-import { ArrowUpDown, ArrowUp, ArrowDown, TrendingUp, TrendingDown, Minus } from 'lucide-react';
-import { PlayerWithHistory, SortField, SortDirection } from '../types/player';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
+import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
+import { Badge } from '../ui/badge';
+import { Button } from '../ui/button';
+import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { PlayerWithHistory, SortField, SortDirection } from '../../types/player';
+import { getWinRate, getEvolutionIcon } from './utils';
 
 interface RankingTableProps {
   players: PlayerWithHistory[];
@@ -67,20 +68,6 @@ export function RankingTable({ players }: RankingTableProps) {
     return sortDirection === 'asc' ? 
       <ArrowUp className="h-4 w-4" /> : 
       <ArrowDown className="h-4 w-4" />;
-  };
-
-  const getWinRate = (wins: number, losses: number) => {
-    const total = wins + losses;
-    return total > 0 ? Math.round((wins / total) * 100) : 0;
-  };
-
-  const getEvolutionIcon = (evolution: number) => {
-    if (evolution > 0) {
-      return <TrendingUp className="h-4 w-4 text-green-500" />;
-    } else if (evolution < 0) {
-      return <TrendingDown className="h-4 w-4 text-red-500" />;
-    }
-    return <Minus className="h-4 w-4 text-muted-foreground" />;
   };
 
   const getCategoryColor = (category: string) => {
