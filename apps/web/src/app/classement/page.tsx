@@ -5,7 +5,7 @@ import { TopPlayersCards } from '../../components/RankingComponents/TopPlayersCa
 import { RankingTable } from '../../components/RankingComponents/RankingTable';
 import { SearchAndFilters } from '../../components/RankingComponents/SearchAndFilters';
 import { Card, CardContent } from '../../components/ui/card';
-import { Avatar, AvatarImage, AvatarFallback } from '../../components/ui/avatar';
+import { PlayerAvatar } from '../../components/PlayerAvatar';
 import { Input } from '../../components/ui/input';
 import { PlayerWithHistory, FilterPeriod } from '../../types/player';
 import { mockPlayers } from '../../data/playerData';
@@ -65,10 +65,12 @@ export default function RankingPage() {
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center gap-4 mb-6">
-              <Avatar className="h-16 w-16">
-                <AvatarImage src={currentUser.avatar} alt={currentUser.pseudo} />
-                <AvatarFallback>{getInitials(currentUser.pseudo)}</AvatarFallback>
-              </Avatar>
+              <PlayerAvatar
+                src={currentUser.avatar}
+                alt={currentUser.pseudo}
+                name={currentUser.pseudo}
+                className="h-16 w-16"
+              />
               <div>
                 <h3>{currentUser.pseudo}</h3>
                 <p className="text-sm text-muted-foreground">

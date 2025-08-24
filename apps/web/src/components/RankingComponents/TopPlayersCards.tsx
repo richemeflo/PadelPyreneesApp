@@ -1,5 +1,5 @@
 import { Card, CardContent } from '../ui/card';
-import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
+import { PlayerAvatar } from '../PlayerAvatar';
 import { Badge } from '../ui/badge';
 import { Trophy } from 'lucide-react';
 import { PlayerWithHistory } from '../../types/player';
@@ -41,11 +41,13 @@ export function TopPlayersCards({ players }: TopPlayersCardsProps) {
             </div>
             
             <div className="flex flex-col items-center text-center">
-              <Avatar className="h-16 w-16 mb-3">
-                <AvatarImage src={player.avatar} alt={player.pseudo} />
-                <AvatarFallback>{getInitials(player.pseudo)}</AvatarFallback>
-              </Avatar>
-              
+              <PlayerAvatar
+                src={player.avatar}
+                alt={player.pseudo}
+                name={player.pseudo}
+                className="h-16 w-16 mb-3"
+              />
+
               <h3 className="mb-1">{player.pseudo}</h3>
               <p className="text-2xl mb-2">{player.eloPoints}</p>
               <p className="text-sm text-muted-foreground mb-2">
