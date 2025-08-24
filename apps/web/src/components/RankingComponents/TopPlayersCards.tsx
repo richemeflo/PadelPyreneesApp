@@ -1,8 +1,9 @@
-import { Card, CardContent } from './ui/card';
-import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
-import { Badge } from './ui/badge';
-import { Trophy, TrendingUp, TrendingDown } from 'lucide-react';
-import { PlayerWithHistory } from '../types/player';
+import { Card, CardContent } from '../ui/card';
+import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
+import { Badge } from '../ui/badge';
+import { Trophy } from 'lucide-react';
+import { PlayerWithHistory } from '../../types/player';
+import { getWinRate, getEvolutionIcon } from './utils';
 
 interface TopPlayersCardsProps {
   players: PlayerWithHistory[];
@@ -18,20 +19,6 @@ export function TopPlayersCards({ players }: TopPlayersCardsProps) {
       3: 'text-amber-600'
     };
     return <Trophy className={`h-5 w-5 ${colors[rank as keyof typeof colors]}`} />;
-  };
-
-  const getEvolutionIcon = (evolution: number) => {
-    if (evolution > 0) {
-      return <TrendingUp className="h-4 w-4 text-green-500" />;
-    } else if (evolution < 0) {
-      return <TrendingDown className="h-4 w-4 text-red-500" />;
-    }
-    return null;
-  };
-
-  const getWinRate = (wins: number, losses: number) => {
-    const total = wins + losses;
-    return total > 0 ? Math.round((wins / total) * 100) : 0;
   };
 
   return (

@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Input } from './ui/input';
-import { Button } from './ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Badge } from './ui/badge';
+import { Input } from '../ui/input';
+import { Button } from '../ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Badge } from '../ui/badge';
 import { Search, Filter, X } from 'lucide-react';
-import { FilterPeriod } from '../types/player';
+import { FilterPeriod } from '../../types/player';
 
 interface SearchAndFiltersProps {
   searchQuery: string;
