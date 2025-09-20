@@ -34,6 +34,8 @@ model Player {
   // Historique Elo
   ratingHistory RatingHistory[]
 
+  matchmakingAvailability MatchmakingAvailability[]
+
   @@index([elo])
 }
 
@@ -88,6 +90,10 @@ model Pair {
   matchesAsA Match[] @relation("PairA")
   matchesAsB Match[] @relation("PairB")
 
+  proposalsAsRequester MatchProposal[]         @relation("RequesterPair")
+  proposalsAsOpponent  MatchProposal[]         @relation("OpponentPair")
+  proposalAcceptances  MatchProposalAcceptance[]
+
   @@unique([lId, rId]) // empêche de créer deux fois la même paire
   @@index([lId])
   @@index([rId])
@@ -132,6 +138,51 @@ model RatingHistory {
 
   @@index([playerId])
   @@index([matchId])
+}
+
+model MatchmakingAvailability {
+  id        String   @id @default(cuid())
+  playerId  String
+  player    Player   @relation(fields: [playerId], references: [id])
+  start     DateTime
+  end       DateTime
+  createdAt DateTime @default(now())
+
+  @@index([playerId])
+  @@index([start])
+  @@index([end])
+}
+
+model MatchProposal {
+  id              String   @id @default(cuid())
+  requesterPairId String
+  opponentPairId  String
+  requesterPair   Pair     @relation("RequesterPair", fields: [requesterPairId], references: [id])
+  opponentPair    Pair     @relation("OpponentPair", fields: [opponentPairId], references: [id])
+  start           DateTime
+  end             DateTime
+  locationLat     Float
+  locationLon     Float
+  createdAt       DateTime @default(now())
+
+  acceptances MatchProposalAcceptance[]
+
+  @@index([requesterPairId])
+  @@index([opponentPairId])
+  @@index([start])
+  @@index([end])
+}
+
+model MatchProposalAcceptance {
+  id         String       @id @default(cuid())
+  proposalId String
+  proposal   MatchProposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  pairId     String
+  pair       Pair          @relation(fields: [pairId], references: [id])
+  acceptedAt DateTime      @default(now())
+
+  @@unique([proposalId, pairId])
+  @@index([pairId])
 }
 
 model Tournament {

@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { haversineDistanceKm } from "../lib/geodistance";
 import { prisma } from "../lib/prisma";
+import { authGuard } from "../middlewares/authGuard";
 
 export const clubsRouter = Router();
 export const courtsRouter = Router();
@@ -17,7 +18,7 @@ const clubCreateSchema = z.object({
   apiKey: z.string().optional(),
 });
 
-clubsRouter.post("/", async (req, res, next) => {
+clubsRouter.post("/", authGuard, async (req, res, next) => {
   try {
     const payload = clubCreateSchema.parse(req.body);
     const club = await prisma.club.create({ data: payload });

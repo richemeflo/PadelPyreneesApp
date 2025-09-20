@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { haversineDistanceKm } from "../lib/geodistance";
 import { prisma } from "../lib/prisma";
+import { authGuard, requireFirebaseUser } from "../middlewares/authGuard";
 import {
   ReservationAvailability,
   ReservationBooking,
@@ -15,17 +16,12 @@ import {
 export const reservationsRouter = Router();
 
 const suggestSchema = z.object({
-  userId: z.string(),
   start: z.coerce.date(),
   durationMinutes: z.number().int().min(30).max(240).default(90),
   preferredClubIds: z.array(z.string()).optional(),
   location: z.object({ lat: z.number(), lon: z.number() }).optional(),
   radiusKm: z.number().positive().max(500).default(80),
   limit: z.number().int().min(1).max(10).default(5),
-});
-
-const confirmSchema = z.object({
-  userId: z.string(),
 });
 
 type StoredSuggestion = {
@@ -39,9 +35,10 @@ type StoredSuggestion = {
 
 const suggestionsStore = new Map<string, StoredSuggestion>();
 
-reservationsRouter.post("/suggest", async (req, res, next) => {
+reservationsRouter.post("/suggest", authGuard, async (req, res, next) => {
   try {
     const payload = suggestSchema.parse(req.body);
+    const auth = requireFirebaseUser(req);
     const start = new Date(payload.start);
     const end = new Date(start.getTime() + payload.durationMinutes * 60 * 1000);
 
@@ -89,7 +86,7 @@ reservationsRouter.post("/suggest", async (req, res, next) => {
           courtId: court.id,
           start,
           end,
-          userId: payload.userId,
+          userId: auth.uid,
         };
 
         let availability: ReservationAvailability;
@@ -135,10 +132,10 @@ reservationsRouter.post("/suggest", async (req, res, next) => {
   }
 });
 
-reservationsRouter.post("/:id/confirm", async (req, res, next) => {
+reservationsRouter.post("/:id/confirm", authGuard, async (req, res, next) => {
   try {
     const params = z.object({ id: z.string() }).parse(req.params);
-    const payload = confirmSchema.parse(req.body);
+    const auth = requireFirebaseUser(req);
 
     const suggestion = suggestionsStore.get(params.id);
     if (!suggestion) {
@@ -146,7 +143,7 @@ reservationsRouter.post("/:id/confirm", async (req, res, next) => {
       return;
     }
 
-    if (suggestion.request.userId !== payload.userId) {
+    if (suggestion.request.userId !== auth.uid) {
       res.status(403).json({ error: "User mismatch for reservation" });
       return;
     }

@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { prisma } from "../lib/prisma";
 import { updateElo } from "../services/elo";
+import { authGuard, requireFirebaseUser } from "../middlewares/authGuard";
 
 export const matchesRouter = Router();
 
@@ -18,18 +19,15 @@ const createMatchSchema = z.object({
 });
 
 const scoreSubmissionSchema = z.object({
-  submittedBy: z.string(),
   winnerPairId: z.string(),
   score: z.string().min(1),
 });
 
 const scoreConfirmationSchema = z.object({
-  playerId: z.string(),
   accept: z.boolean().default(true),
 });
 
 const reviewSchema = z.object({
-  playerId: z.string(),
   targetPairId: z.string(),
   fairPlay: z.number().int().min(1).max(5),
   skill: z.number().int().min(1).max(5),
@@ -46,6 +44,7 @@ type PendingScore = {
 };
 
 type MatchReview = z.infer<typeof reviewSchema> & {
+  authorId: string;
   createdAt: Date;
 };
 
@@ -56,11 +55,28 @@ type MatchWithPairs = Prisma.MatchGetPayload<{
   };
 }>;
 
-matchesRouter.post("/", async (req, res, next) => {
+matchesRouter.post("/", authGuard, async (req, res, next) => {
   try {
     const payload = createMatchSchema.parse(req.body);
+    const auth = requireFirebaseUser(req);
     if (payload.pairAId === payload.pairBId) {
       res.status(400).json({ error: "pairAId and pairBId must differ" });
+      return;
+    }
+
+    const [pairA, pairB] = await Promise.all([
+      prisma.pair.findUnique({ where: { id: payload.pairAId }, include: { l: true, r: true } }),
+      prisma.pair.findUnique({ where: { id: payload.pairBId }, include: { l: true, r: true } }),
+    ]);
+
+    if (!pairA || !pairB) {
+      res.status(404).json({ error: "Pair not found" });
+      return;
+    }
+
+    const participantIds = [pairA.l.id, pairA.r.id, pairB.l.id, pairB.r.id];
+    if (!participantIds.includes(auth.uid)) {
+      res.status(403).json({ error: "Player must belong to one of the pairs" });
       return;
     }
 
@@ -110,17 +126,28 @@ matchesRouter.get("/:id", async (req, res, next) => {
   }
 });
 
-matchesRouter.post("/:id/submit-score", async (req, res, next) => {
+matchesRouter.post("/:id/submit-score", authGuard, async (req, res, next) => {
   try {
     const params = z.object({ id: z.string() }).parse(req.params);
     const payload = scoreSubmissionSchema.parse(req.body);
+    const auth = requireFirebaseUser(req);
 
     const match = await prisma.match.findUnique({
       where: { id: params.id },
+      include: {
+        pairA: { include: { l: true, r: true } },
+        pairB: { include: { l: true, r: true } },
+      },
     });
 
     if (!match) {
       res.status(404).json({ error: "Match not found" });
+      return;
+    }
+
+    const participantPairId = findParticipantPair(match, auth.uid);
+    if (!participantPairId) {
+      res.status(403).json({ error: "Player is not part of this match" });
       return;
     }
 
@@ -132,7 +159,7 @@ matchesRouter.post("/:id/submit-score", async (req, res, next) => {
     pendingScores.set(params.id, {
       score: payload.score,
       winnerPairId: payload.winnerPairId,
-      submittedBy: payload.submittedBy,
+      submittedBy: auth.uid,
       confirmedPairs: new Set(),
       confirmedByPlayers: new Set(),
     });
@@ -148,10 +175,11 @@ matchesRouter.post("/:id/submit-score", async (req, res, next) => {
   }
 });
 
-matchesRouter.post("/:id/confirm-score", async (req, res, next) => {
+matchesRouter.post("/:id/confirm-score", authGuard, async (req, res, next) => {
   try {
     const params = z.object({ id: z.string() }).parse(req.params);
     const payload = scoreConfirmationSchema.parse(req.body);
+    const auth = requireFirebaseUser(req);
 
     const pending = pendingScores.get(params.id);
     if (!pending) {
@@ -172,7 +200,7 @@ matchesRouter.post("/:id/confirm-score", async (req, res, next) => {
       return;
     }
 
-    const participantPairId = findParticipantPair(match, payload.playerId);
+    const participantPairId = findParticipantPair(match, auth.uid);
     if (!participantPairId) {
       res.status(403).json({ error: "Player is not part of this match" });
       return;
@@ -188,7 +216,7 @@ matchesRouter.post("/:id/confirm-score", async (req, res, next) => {
       return;
     }
 
-    if (pending.confirmedByPlayers.has(payload.playerId)) {
+    if (pending.confirmedByPlayers.has(auth.uid)) {
       res.json({
         status: "waiting",
         message: "Player already confirmed",
@@ -197,7 +225,7 @@ matchesRouter.post("/:id/confirm-score", async (req, res, next) => {
       return;
     }
 
-    pending.confirmedByPlayers.add(payload.playerId);
+    pending.confirmedByPlayers.add(auth.uid);
     pending.confirmedPairs.add(participantPairId);
 
     if (pending.confirmedPairs.size >= 2) {
@@ -216,19 +244,32 @@ matchesRouter.post("/:id/confirm-score", async (req, res, next) => {
   }
 });
 
-matchesRouter.post("/:id/review", async (req, res, next) => {
+matchesRouter.post("/:id/review", authGuard, async (req, res, next) => {
   try {
     const params = z.object({ id: z.string() }).parse(req.params);
     const payload = reviewSchema.parse(req.body);
+    const auth = requireFirebaseUser(req);
 
-    const match = await prisma.match.findUnique({ where: { id: params.id } });
+    const match = await prisma.match.findUnique({
+      where: { id: params.id },
+      include: {
+        pairA: { include: { l: true, r: true } },
+        pairB: { include: { l: true, r: true } },
+      },
+    });
     if (!match) {
       res.status(404).json({ error: "Match not found" });
       return;
     }
 
+    const participantPairId = findParticipantPair(match, auth.uid);
+    if (!participantPairId) {
+      res.status(403).json({ error: "Player is not part of this match" });
+      return;
+    }
+
     const reviews = matchReviews.get(params.id) ?? [];
-    reviews.push({ ...payload, createdAt: new Date() });
+    reviews.push({ ...payload, authorId: auth.uid, createdAt: new Date() });
     matchReviews.set(params.id, reviews);
 
     res.status(201).json({ status: "recorded" });

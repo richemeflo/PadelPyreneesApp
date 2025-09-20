@@ -12,9 +12,11 @@ import {
   deleteProposal,
   getPlayerAvailability,
   getProposal,
+  listProposalsForPair,
   setPlayerAvailability,
   upsertProposal,
 } from "../services/matchmaking/storage";
+import { authGuard, requireFirebaseUser } from "../middlewares/authGuard";
 
 export const matchmakingRouter = Router();
 
@@ -25,7 +27,6 @@ const slotSchema = z.object({
 
 const searchSchema = z.object({
   requesterPairId: z.string(),
-  playerId: z.string(),
   location: z.object({ lat: z.number(), lon: z.number() }),
   radiusKm: z.number().positive().max(500).default(100),
   maxEloDiff: z.number().positive().max(400).default(150),
@@ -35,6 +36,10 @@ const searchSchema = z.object({
 });
 
 const proposalAcceptSchema = z.object({
+  pairId: z.string(),
+});
+
+const proposalsQuerySchema = z.object({
   pairId: z.string(),
 });
 
@@ -50,9 +55,10 @@ type ProposalResponse = {
   eloGap: number;
 };
 
-matchmakingRouter.post("/search", async (req, res, next) => {
+matchmakingRouter.post("/search", authGuard, async (req, res, next) => {
   try {
     const payload = searchSchema.parse(req.body);
+    const auth = requireFirebaseUser(req);
     const requesterPair = await prisma.pair.findUnique({
       where: { id: payload.requesterPairId },
       include: { l: true, r: true },
@@ -63,7 +69,7 @@ matchmakingRouter.post("/search", async (req, res, next) => {
       return;
     }
 
-    if (![requesterPair.l.id, requesterPair.r.id].includes(payload.playerId)) {
+    if (![requesterPair.l.id, requesterPair.r.id].includes(auth.uid)) {
       res.status(403).json({ error: "Player is not part of requester pair" });
       return;
     }
@@ -159,16 +165,27 @@ matchmakingRouter.post("/search", async (req, res, next) => {
   }
 });
 
-matchmakingRouter.post("/proposals/:id/accept", async (req, res, next) => {
+matchmakingRouter.post("/proposals/:id/accept", authGuard, async (req, res, next) => {
   try {
     const params = z.object({ id: z.string() }).parse(req.params);
     const payload = proposalAcceptSchema.parse(req.body);
+    const auth = requireFirebaseUser(req);
 
     await cleanupStorage();
 
     const proposal = await getProposal(params.id);
     if (!proposal) {
       res.status(404).json({ error: "Proposal not found" });
+      return;
+    }
+
+    const pair = await prisma.pair.findUnique({
+      where: { id: payload.pairId },
+      include: { l: true, r: true },
+    });
+
+    if (!pair || (pair.l.id !== auth.uid && pair.r.id !== auth.uid)) {
+      res.status(403).json({ error: "Player cannot accept for this pair" });
       return;
     }
 
@@ -254,3 +271,30 @@ function averageLocation(
   const avgLon = valid.reduce((sum, p) => sum + (p.lon as number), 0) / valid.length;
   return { lat: avgLat, lon: avgLon };
 }
+matchmakingRouter.get("/proposals", authGuard, async (req, res, next) => {
+  try {
+    const query = proposalsQuerySchema.parse(req.query);
+    const auth = requireFirebaseUser(req);
+
+    const pair = await prisma.pair.findUnique({
+      where: { id: query.pairId },
+      include: { l: true, r: true },
+    });
+
+    if (!pair) {
+      res.status(404).json({ error: "Pair not found" });
+      return;
+    }
+
+    if (pair.l.id !== auth.uid && pair.r.id !== auth.uid) {
+      res.status(403).json({ error: "Player cannot view proposals for this pair" });
+      return;
+    }
+
+    const proposals = await listProposalsForPair(query.pairId);
+
+    res.json({ proposals });
+  } catch (error) {
+    next(error);
+  }
+});

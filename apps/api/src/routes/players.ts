@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { prisma } from "../lib/prisma";
 import { Coordinates, haversineDistanceKm } from "../lib/geodistance";
+import { authGuard, requireFirebaseUser } from "../middlewares/authGuard";
 
 export const playersRouter = Router();
 export const rankingRouter = Router();
@@ -35,11 +36,21 @@ const REGION_PRESETS: Record<string, Coordinates & { radiusKm: number }> = {
   navarre: { lat: 42.8169, lon: -1.6432, radiusKm: 150 },
 };
 
-playersRouter.post("/", async (req, res, next) => {
+playersRouter.post("/", authGuard, async (req, res, next) => {
   try {
+    const auth = requireFirebaseUser(req);
     const payload = playerCreateSchema.parse(req.body);
+    if (auth.email && payload.email !== auth.email) {
+      res.status(403).json({ error: "Email does not match authenticated user" });
+      return;
+    }
+
     const player = await prisma.player.create({
-      data: payload,
+      data: {
+        ...payload,
+        id: auth.uid,
+        email: auth.email ?? payload.email,
+      },
     });
     res.status(201).json(player);
   } catch (error) {
@@ -85,9 +96,14 @@ playersRouter.get("/:id", async (req, res, next) => {
   }
 });
 
-playersRouter.patch("/:id", async (req, res, next) => {
+playersRouter.patch("/:id", authGuard, async (req, res, next) => {
   try {
     const { id } = z.object({ id: z.string() }).parse(req.params);
+    const auth = requireFirebaseUser(req);
+    if (auth.uid !== id) {
+      res.status(403).json({ error: "Cannot update another player" });
+      return;
+    }
     const payload = playerUpdateSchema.parse(req.body);
 
     const player = await prisma.player.update({

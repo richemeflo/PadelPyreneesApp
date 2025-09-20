@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 
 import { prisma } from "../lib/prisma";
+import { authGuard, requireFirebaseUser } from "../middlewares/authGuard";
 
 export const tournamentsRouter = Router();
 
@@ -9,7 +10,6 @@ const tournamentCreateSchema = z.object({
   name: z.string().min(3),
   desc: z.string().optional(),
   kind: z.string().default("internal"),
-  createdBy: z.string().optional(),
   externalClubId: z.string().optional(),
   levelMin: z.number().optional(),
   levelMax: z.number().optional(),
@@ -26,16 +26,18 @@ const querySchema = z.object({
   playerId: z.string().optional(),
 });
 
-const registrationSchema = z.object({
-  playerId: z.string(),
-});
-
 const tournamentRegistrations = new Map<string, Set<string>>();
 
-tournamentsRouter.post("/", async (req, res, next) => {
+tournamentsRouter.post("/", authGuard, async (req, res, next) => {
   try {
     const payload = tournamentCreateSchema.parse(req.body);
-    const tournament = await prisma.tournament.create({ data: payload });
+    const auth = requireFirebaseUser(req);
+    const tournament = await prisma.tournament.create({
+      data: {
+        ...payload,
+        createdBy: auth.uid,
+      },
+    });
     res.status(201).json(tournament);
   } catch (error) {
     next(error);
@@ -76,13 +78,13 @@ tournamentsRouter.get("/", async (req, res, next) => {
   }
 });
 
-tournamentsRouter.post("/:id/register", async (req, res, next) => {
+tournamentsRouter.post("/:id/register", authGuard, async (req, res, next) => {
   try {
     const { id } = z.object({ id: z.string() }).parse(req.params);
-    const payload = registrationSchema.parse(req.body);
+    const auth = requireFirebaseUser(req);
 
     const [player, tournament] = await Promise.all([
-      prisma.player.findUnique({ where: { id: payload.playerId } }),
+      prisma.player.findUnique({ where: { id: auth.uid } }),
       prisma.tournament.findUnique({ where: { id } }),
     ]);
 
@@ -100,12 +102,12 @@ tournamentsRouter.post("/:id/register", async (req, res, next) => {
     }
 
     const registrations = tournamentRegistrations.get(id) ?? new Set<string>();
-    if (registrations.has(payload.playerId)) {
+    if (registrations.has(auth.uid)) {
       res.status(200).json({ status: "already-registered" });
       return;
     }
 
-    registrations.add(payload.playerId);
+    registrations.add(auth.uid);
     tournamentRegistrations.set(id, registrations);
 
     res.status(201).json({ status: "registered", participants: registrations.size });
