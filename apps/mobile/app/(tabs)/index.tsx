@@ -1,75 +1,113 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { ScrollView, View, Text, StyleSheet } from 'react-native';
+import { useQuery } from '@tanstack/react-query';
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+import { useAuth } from '@/context/AuthContext';
+import { fetchPlayer, fetchTournaments } from '@/lib/api';
 
-export default function HomeScreen() {
+export default function DashboardScreen() {
+  const { auth } = useAuth();
+
+  const { data: player } = useQuery({
+    queryKey: ['mobile-player', auth?.playerId],
+    queryFn: () => fetchPlayer(auth, auth!.playerId),
+    enabled: Boolean(auth?.playerId),
+  });
+
+  const { data: tournaments } = useQuery({
+    queryKey: ['mobile-tournaments'],
+    queryFn: () => fetchTournaments(auth, 3),
+    enabled: Boolean(auth?.playerId),
+  });
+
+  if (!auth) {
+    return (
+      <View style={styles.centered}> 
+        <Text style={styles.centeredText}>Connectez-vous pour voir votre tableau de bord.</Text>
+      </View>
+    );
+  }
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.heading}>Bienvenue</Text>
+      <View style={styles.card}>
+        <Text style={styles.title}>{player?.pseudo ?? 'Joueur'}</Text>
+        <Text style={styles.muted}>Elo: {player?.elo ?? '--'}</Text>
+        <Text style={styles.muted}>Langue: {player?.locale ?? 'fr'}</Text>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.title}>Mes paires</Text>
+        {(player?.pairsAsA ?? []).concat(player?.pairsAsB ?? []).map((pair: { id: string; elo: number }, index: number) => (
+          <View key={pair.id} style={styles.listItem}>
+            <Text style={styles.listText}>#{index + 1} • {pair.id}</Text>
+            <Text style={styles.muted}>Elo: {pair.elo}</Text>
+          </View>
+        ))}
+        {(!player?.pairsAsA?.length && !player?.pairsAsB?.length) && (
+          <Text style={styles.muted}>Aucune paire enregistrée.</Text>
+        )}
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.title}>Tournois à venir</Text>
+        {tournaments?.map((tournament) => (
+          <View key={tournament.id} style={styles.listItem}>
+            <Text style={styles.listText}>{tournament.name}</Text>
+            <Text style={styles.muted}>{new Date(tournament.startsAt).toLocaleDateString()}</Text>
+          </View>
+        ))}
+        {!tournaments?.length && (
+          <Text style={styles.muted}>Aucun tournoi planifié.</Text>
+        )}
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
+  container: {
+    padding: 20,
+    gap: 20,
+  },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
+    padding: 24,
+  },
+  centeredText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+  },
+  heading: {
+    fontSize: 28,
+    fontWeight: '700',
+  },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    shadowColor: '#000',
+    elevation: 2,
     gap: 8,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  title: {
+    fontSize: 18,
+    fontWeight: '600',
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  muted: {
+    color: '#777',
+    fontSize: 14,
+  },
+  listItem: {
+    marginTop: 12,
+  },
+  listText: {
+    fontSize: 16,
+    fontWeight: '500',
   },
 });

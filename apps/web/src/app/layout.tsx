@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+
+import { HeaderNav } from "../components/layout/HeaderNav";
+import { Providers } from "./providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,39 +27,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <header className="border-b">
-          <nav className="container mx-auto flex flex-wrap items-center justify-between p-4">
-            <Link href="/" className="font-bold text-lg">
-              PadelPyrenees
-            </Link>
-            <ul className="flex flex-wrap gap-4 text-sm">
-              <li>
-                <Link href="/classement" className="hover:text-blue-600">
-                  Classement
-                </Link>
-              </li>
-              <li>
-                <Link href="/matchmaking" className="hover:text-blue-600">
-                  Matchmaking
-                </Link>
-              </li>
-              <li>
-                <Link href="/reservations" className="hover:text-blue-600">
-                  Réservations
-                </Link>
-              </li>
-              <li>
-                <Link href="/tournois" className="hover:text-blue-600">
-                  Tournois
-                </Link>
-              </li>
-            </ul>
-          </nav>
-        </header>
-        {children}
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <Providers>
+          <HeaderNav />
+          {children}
+        </Providers>
       </body>
     </html>
   );

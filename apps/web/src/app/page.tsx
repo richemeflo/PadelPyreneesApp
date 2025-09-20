@@ -1,222 +1,233 @@
 "use client";
 
-import { useState } from "react";
-import { Plus } from "lucide-react";
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 
 import { Card, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "../components/ui/carousel";
+import { fetchMatchmakingProposals, fetchPlayer, fetchTournaments } from "../lib/api";
 
-interface Event {
-  id: string;
-  title: string;
-  date: string;
-}
+type PlayerResponse = Awaited<ReturnType<typeof fetchPlayer>>;
 
-interface Match {
-  id: string;
-  opponent: string;
-  date: string;
-  location: string;
-}
-
-interface UserTournament {
-  id: string;
-  title: string;
-  date: string;
-  location: string;
-}
-
-interface Mission {
-  id: string;
-  title: string;
-  frequency: "quotidienne" | "hebdomadaire" | "mensuelle" | "saison";
-}
-
-const mockEvents: Event[] = [
-  { id: "1", title: "Padel Night", date: "10/08/2024" },
-  { id: "2", title: "Tournoi de l'été", date: "20/08/2024" },
-  { id: "3", title: "Stage Jeunes", date: "25/08/2024" },
-];
-
-const upcomingMatches: Match[] = [
-  { id: "m1", opponent: "Alice/Bob", date: "05/08/2024 18:00", location: "Toulouse" },
-  { id: "m2", opponent: "Charlie/Dave", date: "07/08/2024 19:30", location: "Pau" },
-];
-
-const upcomingTournaments: UserTournament[] = [
-  { id: "t1", title: "Open de Toulouse", date: "10/09/2024", location: "Toulouse" },
-];
-
-const pastMatchesToDeclare: Match[] = [
-  { id: "m3", opponent: "Eve/Frank", date: "20/07/2024", location: "Tarbes" },
-];
-
-const missions: Mission[] = [
-  { id: "mission1", title: "Gagner un match", frequency: "quotidienne" },
-  { id: "mission2", title: "Jouer 3 matchs", frequency: "hebdomadaire" },
-  { id: "mission3", title: "Inviter un ami", frequency: "mensuelle" },
-  { id: "mission4", title: "Participer à un tournoi", frequency: "saison" },
-];
+const demoPlayerId = process.env.NEXT_PUBLIC_DEMO_PLAYER_ID ?? "";
 
 export default function HomePage() {
-  const [missionFilter, setMissionFilter] = useState<Mission["frequency"]>("quotidienne");
+  const { t, i18n } = useTranslation();
 
-  const userStats = {
-    elo: 1520,
-    scheduledMatches: upcomingMatches.length,
-    scheduledTournaments: upcomingTournaments.length,
-    resultsToDeclare: pastMatchesToDeclare.length,
+  const {
+    data: player,
+    isLoading: isPlayerLoading,
+    error: playerError,
+    refetch: refetchPlayer,
+  } = useQuery<PlayerResponse>({
+    queryKey: ["player", demoPlayerId],
+    queryFn: () => fetchPlayer(demoPlayerId),
+    enabled: Boolean(demoPlayerId),
+  });
+
+  const primaryPairId = useMemo(() => {
+    if (!player) return undefined;
+    if (player.pairsAsA.length > 0) return player.pairsAsA[0].id;
+    if (player.pairsAsB.length > 0) return player.pairsAsB[0].id;
+    return undefined;
+  }, [player]);
+
+  const {
+    data: proposals,
+    isLoading: isProposalsLoading,
+    error: proposalsError,
+    refetch: refetchProposals,
+  } = useQuery({
+    queryKey: ["matchmaking", primaryPairId],
+    queryFn: () => fetchMatchmakingProposals(primaryPairId as string),
+    enabled: Boolean(primaryPairId),
+  });
+
+  const {
+    data: tournaments,
+    isLoading: isTournamentsLoading,
+    error: tournamentsError,
+    refetch: refetchTournaments,
+  } = useQuery({
+    queryKey: ["tournaments"],
+    queryFn: () => fetchTournaments(6),
+  });
+
+  const stats = {
+    elo: player?.elo ?? "--",
+    scheduledMatches: proposals?.length ?? 0,
+    scheduledTournaments: tournaments?.length ?? 0,
+    resultsToDeclare: 0,
   };
 
-  const filteredMissions = missions.filter((m) => m.frequency === missionFilter);
+  const dateFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat(i18n.language ?? "fr", {
+        dateStyle: "medium",
+        timeStyle: "short",
+      }),
+    [i18n.language],
+  );
 
   return (
-    <div className="container mx-auto px-4 py-8 space-y-8">
-      {/* Section 1: Mes informations */}
+    <div className="container mx-auto px-4 py-8 space-y-10">
       <section>
-        <h2 className="mb-4">Mes informations</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold">{userStats.elo}</p>
-              <p className="text-sm text-muted-foreground">Elo</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold">{userStats.scheduledMatches}</p>
-              <p className="text-sm text-muted-foreground">Matchs prévus</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold">{userStats.scheduledTournaments}</p>
-              <p className="text-sm text-muted-foreground">Tournois prévus</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold">{userStats.resultsToDeclare}</p>
-              <p className="text-sm text-muted-foreground">Résultats à déclarer</p>
-            </CardContent>
-          </Card>
-        </div>
+        <h2 className="mb-4 text-xl font-semibold">{t("home.info")}</h2>
+        {playerError ? (
+          <ErrorState message={t("common.error")} onRetry={refetchPlayer} />
+        ) : (
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            <StatCard label={t("stats.elo")} value={stats.elo} loading={isPlayerLoading} />
+            <StatCard
+              label={t("stats.scheduledMatches")}
+              value={stats.scheduledMatches}
+              loading={isProposalsLoading}
+            />
+            <StatCard
+              label={t("stats.scheduledTournaments")}
+              value={stats.scheduledTournaments}
+              loading={isTournamentsLoading}
+            />
+            <StatCard
+              label={t("stats.resultsToDeclare")}
+              value={stats.resultsToDeclare}
+              loading={false}
+            />
+          </div>
+        )}
       </section>
 
-      {/* Section 2: Événements Padel Pyrénées */}
-      {mockEvents.length > 0 && (
-        <section>
-          <h2 className="mb-4">Événements Padel Pyrénées</h2>
-          <Carousel className="w-full">
-            <CarouselContent>
-              {mockEvents.map((event) => (
-                <CarouselItem key={event.id} className="md:basis-1/3">
-                  <Card>
-                    <CardContent className="p-6 flex flex-col items-center justify-center">
-                      <p className="font-semibold">{event.title}</p>
-                      <p className="text-sm text-muted-foreground">{event.date}</p>
-                    </CardContent>
-                  </Card>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            <CarouselPrevious />
-            <CarouselNext />
-          </Carousel>
-        </section>
-      )}
-
-      {/* Section 3: Partie(s) prévue(s) */}
-      {upcomingMatches.length > 0 && (
-        <section>
-          <h2 className="mb-4">Partie(s) prévue(s)</h2>
+      <section>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-xl font-semibold">{t("tournaments.upcoming")}</h2>
+          <Button variant="outline" size="sm" onClick={() => refetchTournaments()}>
+            {t("common.refresh")}
+          </Button>
+        </div>
+        {tournamentsError ? (
+          <ErrorState message={t("common.error")} onRetry={refetchTournaments} />
+        ) : isTournamentsLoading ? (
+          <LoadingState label={t("common.loading")} />
+        ) : tournaments && tournaments.length > 0 ? (
           <div className="space-y-4">
-            {upcomingMatches.map((match) => (
-              <Card key={match.id}>
-                <CardContent className="p-4">
-                  <p className="font-semibold">{match.opponent}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {match.date} - {match.location}
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Section 4: Tournoi(s) prévu(s) */}
-      {upcomingTournaments.length > 0 && (
-        <section>
-          <h2 className="mb-4">Tournoi(s) prévu(s)</h2>
-          <div className="space-y-4">
-            {upcomingTournaments.map((tournament) => (
+            {tournaments.map((tournament) => (
               <Card key={tournament.id}>
                 <CardContent className="p-4">
-                  <p className="font-semibold">{tournament.title}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {tournament.date} - {tournament.location}
-                  </p>
+                  <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <p className="font-semibold">{tournament.name}</p>
+                      {tournament.place && (
+                        <p className="text-sm text-muted-foreground">{tournament.place}</p>
+                      )}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {new Date(tournament.startsAt).toLocaleDateString(i18n.language ?? "fr", {
+                        dateStyle: "medium",
+                      })}
+                    </div>
+                  </div>
+                  {tournament.desc && (
+                    <p className="mt-2 text-sm text-muted-foreground">{tournament.desc}</p>
+                  )}
+                  <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                    <span>
+                      {t("tournaments.register")}: {tournament.participantCount ?? 0}
+                    </span>
+                    {tournament.isRegistered && <span>• {t("tournaments.alreadyRegistered")}</span>}
+                  </div>
                 </CardContent>
               </Card>
             ))}
           </div>
-        </section>
-      )}
-
-      {/* Section 5: Déclarer le(s) résultat(s) */}
-      <section>
-        <h2 className="mb-4">Déclarer le(s) résultat(s)</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {pastMatchesToDeclare.map((match) => (
-            <Card key={match.id} className="cursor-pointer">
-              <CardContent className="p-4">
-                <p className="font-semibold">{match.opponent}</p>
-                <p className="text-sm text-muted-foreground">{match.date}</p>
-              </CardContent>
-            </Card>
-          ))}
-          <Card className="flex items-center justify-center cursor-pointer">
-            <CardContent className="p-6 flex items-center justify-center">
-              <Plus className="h-8 w-8 text-muted-foreground" />
-            </CardContent>
-          </Card>
-        </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
+        )}
       </section>
 
-      {/* Section 6: Missions */}
       <section>
-        <h2 className="mb-4">Missions</h2>
-        <div className="flex gap-2 mb-4">
-          {(["quotidienne", "hebdomadaire", "mensuelle", "saison"] as const).map((freq) => (
-            <Button
-              key={freq}
-              variant={missionFilter === freq ? "default" : "outline"}
-              size="sm"
-              onClick={() => setMissionFilter(freq)}
-            >
-              {freq.charAt(0).toUpperCase() + freq.slice(1)}
-            </Button>
-          ))}
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-xl font-semibold">{t("matchmaking.proposals")}</h2>
+          <Button variant="outline" size="sm" onClick={() => refetchProposals()} disabled={!primaryPairId}>
+            {t("common.refresh")}
+          </Button>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {filteredMissions.map((mission) => (
-            <Card key={mission.id}>
-              <CardContent className="p-4">
-                <p className="font-semibold">{mission.title}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        {!primaryPairId ? (
+          <p className="text-sm text-muted-foreground">
+            {t("common.error")}
+          </p>
+        ) : proposalsError ? (
+          <ErrorState message={t("common.error")} onRetry={refetchProposals} />
+        ) : isProposalsLoading ? (
+          <LoadingState label={t("common.loading")} />
+        ) : proposals && proposals.length > 0 ? (
+          <div className="space-y-4">
+            {proposals.map((proposal) => (
+              <Card key={proposal.id}>
+                <CardContent className="p-4 space-y-2">
+                  <div className="flex flex-wrap justify-between text-sm text-muted-foreground">
+                    <span>
+                      {t("matchmaking.schedule")}: {dateFormatter.format(new Date(proposal.start))}
+                    </span>
+                    <span>
+                      {t("matchmaking.distance")}: ~
+                      {proposal.location.lat.toFixed(2)}, {proposal.location.lon.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap justify-between text-sm text-muted-foreground">
+                    <span>
+                      {t("matchmaking.eloGap")}: --
+                    </span>
+                    <span>
+                      {proposal.acceptedPairIds.length >= 2
+                        ? t("matchmaking.accepted")
+                        : t("matchmaking.accept")}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
+        )}
       </section>
     </div>
   );
 }
 
+function StatCard({
+  label,
+  value,
+  loading,
+}: {
+  label: string;
+  value: string | number;
+  loading: boolean;
+}) {
+  return (
+    <Card>
+      <CardContent className="p-4 text-center">
+        <p className="text-2xl font-bold">{loading ? "--" : value}</p>
+        <p className="text-sm text-muted-foreground">{label}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function LoadingState({ label }: { label: string }) {
+  return <p className="text-sm text-muted-foreground">{label}</p>;
+}
+
+function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
+  return (
+    <div className="flex items-center gap-2 text-sm text-red-600">
+      <span>{message}</span>
+      {onRetry && (
+        <Button variant="ghost" size="sm" onClick={onRetry}>
+          ↻
+        </Button>
+      )}
+    </div>
+  );
+}

@@ -7,12 +7,14 @@ import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { PlayerWithHistory, SortField, SortDirection } from '../../types/player';
 import { getWinRate, getEvolutionIcon } from './utils';
 import { getInitials } from '../../utils/player';
+import { useTranslation } from 'react-i18next';
 
 interface RankingTableProps {
   players: PlayerWithHistory[];
 }
 
 export function RankingTable({ players }: RankingTableProps) {
+  const { t } = useTranslation();
   const [sortField, setSortField] = useState<SortField>('rank');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
@@ -90,26 +92,26 @@ export function RankingTable({ players }: RankingTableProps) {
           <TableRow>
             <TableHead className="w-16">
               <Button variant="ghost" onClick={() => handleSort('rank')} className="h-8 p-0">
-                Rang {getSortIcon('rank')}
+                {t('ranking.table.rank')} {getSortIcon('rank')}
               </Button>
             </TableHead>
             <TableHead>
               <Button variant="ghost" onClick={() => handleSort('pseudo')} className="h-8 p-0">
-                Joueur {getSortIcon('pseudo')}
+                {t('ranking.table.player')} {getSortIcon('pseudo')}
               </Button>
             </TableHead>
             <TableHead className="text-center">
               <Button variant="ghost" onClick={() => handleSort('eloPoints')} className="h-8 p-0">
-                Points ELO {getSortIcon('eloPoints')}
+                {t('ranking.table.elo')} {getSortIcon('eloPoints')}
               </Button>
             </TableHead>
-            <TableHead className="text-center">Évolution</TableHead>
+            <TableHead className="text-center">{t('ranking.table.trend')}</TableHead>
             <TableHead className="text-center">
               <Button variant="ghost" onClick={() => handleSort('winRate')} className="h-8 p-0">
-                Ratio V/D {getSortIcon('winRate')}
+                {t('ranking.table.ratio')} {getSortIcon('winRate')}
               </Button>
             </TableHead>
-            <TableHead className="text-center">Catégorie</TableHead>
+            <TableHead className="text-center">{t('ranking.table.category')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
