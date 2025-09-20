@@ -5,6 +5,16 @@ import { z } from "zod";
 
 import { haversineDistanceKm } from "../lib/geodistance";
 import { prisma } from "../lib/prisma";
+import {
+  AvailabilitySlot,
+  StoredProposal,
+  cleanup as cleanupStorage,
+  deleteProposal,
+  getPlayerAvailability,
+  getProposal,
+  setPlayerAvailability,
+  upsertProposal,
+} from "../services/matchmaking/storage";
 
 export const matchmakingRouter = Router();
 
@@ -28,22 +38,6 @@ const proposalAcceptSchema = z.object({
   pairId: z.string(),
 });
 
-type AvailabilitySlot = {
-  start: Date;
-  end: Date;
-};
-
-type StoredProposal = {
-  id: string;
-  requesterPairId: string;
-  opponentPairId: string;
-  start: Date;
-  end: Date;
-  location: { lat: number; lon: number };
-  acceptedPairs: Set<string>;
-  createdAt: Date;
-};
-
 type ProposalResponse = {
   id: string;
   opponentPair: {
@@ -55,9 +49,6 @@ type ProposalResponse = {
   distanceKm: number;
   eloGap: number;
 };
-
-const playerAvailability = new Map<string, AvailabilitySlot[]>();
-const proposals = new Map<string, StoredProposal>();
 
 matchmakingRouter.post("/search", async (req, res, next) => {
   try {
@@ -77,14 +68,18 @@ matchmakingRouter.post("/search", async (req, res, next) => {
       return;
     }
 
+    await cleanupStorage();
+
     const normalizedSlots = normalizeSlots(payload.availability);
     if (!normalizedSlots.length) {
       res.status(400).json({ error: "Availability slots are invalid" });
       return;
     }
 
-    playerAvailability.set(requesterPair.l.id, normalizedSlots);
-    playerAvailability.set(requesterPair.r.id, normalizedSlots);
+    await Promise.all([
+      setPlayerAvailability(requesterPair.l.id, normalizedSlots),
+      setPlayerAvailability(requesterPair.r.id, normalizedSlots),
+    ]);
 
     const candidatePairs = await prisma.pair.findMany({
       where: { NOT: { id: requesterPair.id } },
@@ -108,10 +103,17 @@ matchmakingRouter.post("/search", async (req, res, next) => {
       const distanceKm = haversineDistanceKm(payload.location, candidateLocation);
       if (distanceKm > payload.radiusKm) continue;
 
-      const candidateSlots = intersectSlots(
-        playerAvailability.get(candidate.l.id) ?? defaultSlots(),
-        playerAvailability.get(candidate.r.id) ?? defaultSlots(),
-      );
+      const [candidateSlotsL, candidateSlotsR] = await Promise.all([
+        getPlayerAvailability(candidate.l.id),
+        getPlayerAvailability(candidate.r.id),
+      ]);
+
+      if (!candidateSlotsL.length || !candidateSlotsR.length) {
+        continue;
+      }
+
+      const candidateSlots = intersectSlots(candidateSlotsL, candidateSlotsR);
+      if (!candidateSlots.length) continue;
 
       const commonSlots = intersectSlots(normalizedSlots, candidateSlots);
       const slot = pickSlotWithDuration(commonSlots, payload.matchDurationMinutes);
@@ -128,10 +130,10 @@ matchmakingRouter.post("/search", async (req, res, next) => {
         start: slot.start,
         end,
         location: candidateLocation,
-        acceptedPairs: new Set(),
+        acceptedPairIds: [],
         createdAt: new Date(),
       };
-      proposals.set(proposalId, stored);
+      await upsertProposal(stored);
 
       proposalsForResponse.push({
         id: proposalId,
@@ -162,7 +164,9 @@ matchmakingRouter.post("/proposals/:id/accept", async (req, res, next) => {
     const params = z.object({ id: z.string() }).parse(req.params);
     const payload = proposalAcceptSchema.parse(req.body);
 
-    const proposal = proposals.get(params.id);
+    await cleanupStorage();
+
+    const proposal = await getProposal(params.id);
     if (!proposal) {
       res.status(404).json({ error: "Proposal not found" });
       return;
@@ -173,14 +177,18 @@ matchmakingRouter.post("/proposals/:id/accept", async (req, res, next) => {
       return;
     }
 
-    if (proposal.acceptedPairs.has(payload.pairId)) {
+    if (proposal.acceptedPairIds.includes(payload.pairId)) {
       res.json({ status: "waiting", message: "Pair already accepted" });
       return;
     }
 
-    proposal.acceptedPairs.add(payload.pairId);
+    const updatedAccepted = [...proposal.acceptedPairIds, payload.pairId];
+    const updatedProposal: StoredProposal = {
+      ...proposal,
+      acceptedPairIds: updatedAccepted,
+    };
 
-    if (proposal.acceptedPairs.size >= 2) {
+    if (updatedAccepted.length >= 2) {
       const match = await prisma.match.create({
         data: {
           pairAId: proposal.requesterPairId,
@@ -189,10 +197,12 @@ matchmakingRouter.post("/proposals/:id/accept", async (req, res, next) => {
           status: "PENDING",
         },
       });
-      proposals.delete(params.id);
+      await deleteProposal(params.id);
       res.json({ status: "confirmed", match });
       return;
     }
+
+    await upsertProposal(updatedProposal);
 
     res.json({ status: "waiting" });
   } catch (error) {
@@ -205,13 +215,6 @@ function normalizeSlots(slots: Array<{ start: Date; end: Date }>): AvailabilityS
     .map((slot) => ({ start: new Date(slot.start), end: new Date(slot.end) }))
     .filter((slot) => slot.end > slot.start)
     .sort((a, b) => a.start.getTime() - b.start.getTime());
-}
-
-function defaultSlots(): AvailabilitySlot[] {
-  const now = new Date();
-  const start = new Date(now.getTime() + 60 * 60 * 1000);
-  const end = new Date(start.getTime() + 14 * 24 * 60 * 60 * 1000);
-  return [{ start, end }];
 }
 
 function intersectSlots(a: AvailabilitySlot[], b: AvailabilitySlot[]): AvailabilitySlot[] {
