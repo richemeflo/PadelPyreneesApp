@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+import type { MatchScoreConfirmation, Prisma } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 
@@ -7,9 +7,6 @@ import { updateElo } from "../services/elo";
 import { authGuard, requireFirebaseUser } from "../middlewares/authGuard";
 
 export const matchesRouter = Router();
-
-const pendingScores = new Map<string, PendingScore>();
-const matchReviews = new Map<string, MatchReview[]>();
 
 const createMatchSchema = z.object({
   pairAId: z.string(),
@@ -35,25 +32,42 @@ const reviewSchema = z.object({
   comment: z.string().max(500).optional(),
 });
 
-type PendingScore = {
-  score: string;
-  winnerPairId: string;
-  submittedBy: string;
-  confirmedPairs: Set<string>;
-  confirmedByPlayers: Set<string>;
-};
-
-type MatchReview = z.infer<typeof reviewSchema> & {
-  authorId: string;
-  createdAt: Date;
-};
-
 type MatchWithPairs = Prisma.MatchGetPayload<{
   include: {
     pairA: { include: { l: true; r: true } };
     pairB: { include: { l: true; r: true } };
   };
 }>;
+
+type PendingScoreResponse = {
+  id: string;
+  score: string;
+  winnerPairId: string;
+  submittedBy: string;
+  confirmedPairs: string[];
+  confirmedByPlayers: string[];
+  createdAt: Date;
+};
+
+type SubmissionWithConfirmations = Prisma.MatchScoreSubmissionGetPayload<{
+  include: { confirmations: true };
+}>;
+
+function buildPendingScore(submission: SubmissionWithConfirmations): PendingScoreResponse {
+  const confirmedByPlayers = submission.confirmations.map((confirmation) => confirmation.playerId);
+  const confirmedPairs = Array.from(
+    new Set(submission.confirmations.map((confirmation) => confirmation.pairId)),
+  );
+  return {
+    id: submission.id,
+    score: submission.score,
+    winnerPairId: submission.winnerPairId,
+    submittedBy: submission.submittedBy,
+    confirmedPairs,
+    confirmedByPlayers,
+    createdAt: submission.createdAt,
+  };
+}
 
 matchesRouter.post("/", authGuard, async (req, res, next) => {
   try {
@@ -99,17 +113,27 @@ matchesRouter.post("/", authGuard, async (req, res, next) => {
 matchesRouter.get("/:id", async (req, res, next) => {
   try {
     const { id } = z.object({ id: z.string() }).parse(req.params);
-    const match = await prisma.match.findUnique({
-      where: { id },
-      include: {
-        pairA: { include: { l: true, r: true } },
-        pairB: { include: { l: true, r: true } },
-        ratingHistory: {
-          include: { player: { select: { id: true, pseudo: true } } },
-          orderBy: { createdAt: "desc" },
+    const [match, submission, reviews] = await Promise.all([
+      prisma.match.findUnique({
+        where: { id },
+        include: {
+          pairA: { include: { l: true, r: true } },
+          pairB: { include: { l: true, r: true } },
+          ratingHistory: {
+            include: { player: { select: { id: true, pseudo: true } } },
+            orderBy: { createdAt: "desc" },
+          },
         },
-      },
-    });
+      }),
+      prisma.matchScoreSubmission.findUnique({
+        where: { matchId: id },
+        include: { confirmations: true },
+      }),
+      prisma.matchReview.findMany({
+        where: { matchId: id },
+        orderBy: { createdAt: "desc" },
+      }),
+    ]);
 
     if (!match) {
       res.status(404).json({ error: "Match not found" });
@@ -118,8 +142,8 @@ matchesRouter.get("/:id", async (req, res, next) => {
 
     res.json({
       match,
-      pendingScore: pendingScores.get(id) ?? null,
-      reviews: matchReviews.get(id) ?? [],
+      pendingScore: submission ? buildPendingScore(submission) : null,
+      reviews,
     });
   } catch (error) {
     next(error);
@@ -151,23 +175,44 @@ matchesRouter.post("/:id/submit-score", authGuard, async (req, res, next) => {
       return;
     }
 
+    if (match.status === "CONFIRMED") {
+      res.status(409).json({ error: "Match already confirmed" });
+      return;
+    }
+
+    if (match.status === "DISPUTED") {
+      res.status(409).json({ error: "Match is disputed" });
+      return;
+    }
+
     if (![match.pairAId, match.pairBId].includes(payload.winnerPairId)) {
       res.status(400).json({ error: "Winner pair must be part of the match" });
       return;
     }
 
-    pendingScores.set(params.id, {
-      score: payload.score,
-      winnerPairId: payload.winnerPairId,
-      submittedBy: auth.uid,
-      confirmedPairs: new Set(),
-      confirmedByPlayers: new Set(),
-    });
+    try {
+      await prisma.$transaction(async (tx) => {
+        await tx.matchScoreSubmission.create({
+          data: {
+            matchId: params.id,
+            score: payload.score,
+            winnerPairId: payload.winnerPairId,
+            submittedBy: auth.uid,
+          },
+        });
 
-    await prisma.match.update({
-      where: { id: params.id },
-      data: { status: "AWAITING_CONFIRMATION" },
-    });
+        await tx.match.update({
+          where: { id: params.id },
+          data: { status: "AWAITING_CONFIRMATION" },
+        });
+      });
+    } catch (error) {
+      if (isUniqueConstraintError(error)) {
+        res.status(409).json({ error: "Score already submitted" });
+        return;
+      }
+      throw error;
+    }
 
     res.json({ status: "waiting", matchId: params.id });
   } catch (error) {
@@ -180,12 +225,6 @@ matchesRouter.post("/:id/confirm-score", authGuard, async (req, res, next) => {
     const params = z.object({ id: z.string() }).parse(req.params);
     const payload = scoreConfirmationSchema.parse(req.body);
     const auth = requireFirebaseUser(req);
-
-    const pending = pendingScores.get(params.id);
-    if (!pending) {
-      res.status(404).json({ error: "No pending score for this match" });
-      return;
-    }
 
     const match = await prisma.match.findUnique({
       where: { id: params.id },
@@ -200,6 +239,30 @@ matchesRouter.post("/:id/confirm-score", authGuard, async (req, res, next) => {
       return;
     }
 
+    if (match.status === "CONFIRMED") {
+      res.status(409).json({ error: "Match already confirmed" });
+      return;
+    }
+
+    if (match.status === "DISPUTED") {
+      res.status(409).json({ error: "Match is disputed" });
+      return;
+    }
+
+    if (match.status !== "AWAITING_CONFIRMATION") {
+      res.status(409).json({ error: "Match is not awaiting confirmation" });
+      return;
+    }
+
+    const submission = await prisma.matchScoreSubmission.findUnique({
+      where: { matchId: params.id },
+      include: { confirmations: true },
+    });
+    if (!submission) {
+      res.status(404).json({ error: "No pending score for this match" });
+      return;
+    }
+
     const participantPairId = findParticipantPair(match, auth.uid);
     if (!participantPairId) {
       res.status(403).json({ error: "Player is not part of this match" });
@@ -207,37 +270,69 @@ matchesRouter.post("/:id/confirm-score", authGuard, async (req, res, next) => {
     }
 
     if (!payload.accept) {
-      pendingScores.delete(params.id);
-      await prisma.match.update({
-        where: { id: params.id },
-        data: { status: "DISPUTED" },
+      await prisma.$transaction(async (tx) => {
+        await tx.match.update({
+          where: { id: params.id },
+          data: { status: "DISPUTED" },
+        });
+        await tx.matchScoreConfirmation.deleteMany({
+          where: { submissionId: submission.id },
+        });
+        await tx.matchScoreSubmission.delete({
+          where: { id: submission.id },
+        });
       });
       res.json({ status: "disputed", matchId: params.id });
       return;
     }
 
-    if (pending.confirmedByPlayers.has(auth.uid)) {
+    const alreadyConfirmed = submission.confirmations.some(
+      (confirmation) => confirmation.playerId === auth.uid,
+    );
+    if (alreadyConfirmed) {
+      const pendingScore = buildPendingScore(submission);
       res.json({
         status: "waiting",
         message: "Player already confirmed",
-        confirmedPairs: Array.from(pending.confirmedPairs),
+        confirmedPairs: pendingScore.confirmedPairs,
       });
       return;
     }
 
-    pending.confirmedByPlayers.add(auth.uid);
-    pending.confirmedPairs.add(participantPairId);
+    let confirmationRecord: MatchScoreConfirmation;
+    try {
+      confirmationRecord = await prisma.matchScoreConfirmation.create({
+        data: {
+          submissionId: submission.id,
+          playerId: auth.uid,
+          pairId: participantPairId,
+        },
+      });
+    } catch (error) {
+      if (isUniqueConstraintError(error)) {
+        const pendingScore = buildPendingScore(submission);
+        res.json({
+          status: "waiting",
+          message: "Player already confirmed",
+          confirmedPairs: pendingScore.confirmedPairs,
+        });
+        return;
+      }
+      throw error;
+    }
 
-    if (pending.confirmedPairs.size >= 2) {
-      const result = await finalizeMatch(params.id, pending);
-      pendingScores.delete(params.id);
+    const confirmations = [...submission.confirmations, confirmationRecord];
+    const confirmedPairs = new Set(confirmations.map((entry) => entry.pairId));
+
+    if (confirmedPairs.size >= 2) {
+      const result = await finalizeMatch(params.id, submission);
       res.json({ status: "confirmed", match: result });
       return;
     }
 
     res.json({
       status: "waiting",
-      confirmedPairs: Array.from(pending.confirmedPairs),
+      confirmedPairs: Array.from(confirmedPairs),
     });
   } catch (error) {
     next(error);
@@ -268,9 +363,17 @@ matchesRouter.post("/:id/review", authGuard, async (req, res, next) => {
       return;
     }
 
-    const reviews = matchReviews.get(params.id) ?? [];
-    reviews.push({ ...payload, authorId: auth.uid, createdAt: new Date() });
-    matchReviews.set(params.id, reviews);
+    await prisma.matchReview.create({
+      data: {
+        matchId: params.id,
+        targetPairId: payload.targetPairId,
+        authorId: auth.uid,
+        fairPlay: payload.fairPlay,
+        skill: payload.skill,
+        rematchInterest: payload.rematchInterest,
+        comment: payload.comment,
+      },
+    });
 
     res.status(201).json({ status: "recorded" });
   } catch (error) {
@@ -278,18 +381,25 @@ matchesRouter.post("/:id/review", authGuard, async (req, res, next) => {
   }
 });
 
-async function finalizeMatch(matchId: string, pending: PendingScore) {
+async function finalizeMatch(matchId: string, submission: SubmissionWithConfirmations) {
   return prisma.$transaction(async (tx) => {
     await tx.match.update({
       where: { id: matchId },
       data: {
         status: "CONFIRMED",
-        score: pending.score,
+        score: submission.score,
       },
       include: {
         pairA: { include: { l: true, r: true } },
         pairB: { include: { l: true, r: true } },
       },
+    });
+
+    await tx.matchScoreConfirmation.deleteMany({
+      where: { submissionId: submission.id },
+    });
+    await tx.matchScoreSubmission.deleteMany({
+      where: { id: submission.id },
     });
 
     const matchWithPairs = await tx.match.findUnique({
@@ -304,7 +414,7 @@ async function finalizeMatch(matchId: string, pending: PendingScore) {
       throw new Error("Match disappeared during confirmation");
     }
 
-    await applyEloUpdate(tx, matchWithPairs, pending.winnerPairId);
+    await applyEloUpdate(tx, matchWithPairs, submission.winnerPairId);
 
     const refreshed = await tx.match.findUnique({
       where: { id: matchId },
@@ -363,4 +473,14 @@ function findParticipantPair(match: MatchWithPairs, playerId: string) {
   if (match.pairA.l.id === playerId || match.pairA.r.id === playerId) return match.pairAId;
   if (match.pairB.l.id === playerId || match.pairB.r.id === playerId) return match.pairBId;
   return null;
+}
+
+function isUniqueConstraintError(error: unknown): error is Prisma.PrismaClientKnownRequestError {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+    (error as Prisma.PrismaClientKnownRequestError).code === "P2002"
+  );
 }

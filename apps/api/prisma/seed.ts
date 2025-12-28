@@ -71,12 +71,14 @@ async function seedPairs() {
       id: "pair-alice-bob",
       lId: "auth-user-alice",
       rId: "auth-user-bob",
+      pairKey: ["auth-user-alice", "auth-user-bob"].sort().join("::"),
       elo: 1485,
     },
     {
       id: "pair-carol-dan",
       lId: "auth-user-carol",
       rId: "auth-user-dan",
+      pairKey: ["auth-user-carol", "auth-user-dan"].sort().join("::"),
       elo: 1410,
     },
   ];
@@ -85,7 +87,7 @@ async function seedPairs() {
     pairs.map((pair) =>
       prisma.pair.upsert({
         where: { id: pair.id },
-        update: { elo: pair.elo },
+        update: { elo: pair.elo, pairKey: pair.pairKey },
         create: pair,
       }),
     ),

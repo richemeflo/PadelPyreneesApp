@@ -36,6 +36,18 @@ const REGION_PRESETS: Record<string, Coordinates & { radiusKm: number }> = {
   navarre: { lat: 42.8169, lon: -1.6432, radiusKm: 150 },
 };
 
+const playerPublicSelect = {
+  id: true,
+  email: true,
+  pseudo: true,
+  locale: true,
+  lat: true,
+  lon: true,
+  elo: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
 playersRouter.post("/", authGuard, async (req, res, next) => {
   try {
     const auth = requireFirebaseUser(req);
@@ -63,6 +75,7 @@ playersRouter.get("/", async (_req, res, next) => {
     const players = await prisma.player.findMany({
       orderBy: { createdAt: "desc" },
       take: 100,
+      select: playerPublicSelect,
     });
     res.json(players);
   } catch (error) {
@@ -75,10 +88,20 @@ playersRouter.get("/:id", async (req, res, next) => {
     const { id } = z.object({ id: z.string() }).parse(req.params);
     const player = await prisma.player.findUnique({
       where: { id },
-      include: {
+      select: {
+        ...playerPublicSelect,
         ratingHistory: {
           orderBy: { createdAt: "desc" },
           take: 20,
+          select: {
+            id: true,
+            playerId: true,
+            matchId: true,
+            before: true,
+            after: true,
+            delta: true,
+            createdAt: true,
+          },
         },
         pairsAsA: { select: { id: true, elo: true, rId: true } },
         pairsAsB: { select: { id: true, elo: true, lId: true } },

@@ -18,6 +18,17 @@ const clubCreateSchema = z.object({
   apiKey: z.string().optional(),
 });
 
+const clubPublicSelect = {
+  id: true,
+  name: true,
+  logoUrl: true,
+  address: true,
+  lat: true,
+  lon: true,
+  apiKind: true,
+  createdAt: true,
+} as const;
+
 clubsRouter.post("/", authGuard, async (req, res, next) => {
   try {
     const payload = clubCreateSchema.parse(req.body);
@@ -32,7 +43,10 @@ clubsRouter.get("/", async (_req, res, next) => {
   try {
     const clubs = await prisma.club.findMany({
       orderBy: { createdAt: "desc" },
-      include: { courts: { select: { id: true } } },
+      select: {
+        ...clubPublicSelect,
+        courts: { select: { id: true } },
+      },
     });
     res.json(clubs);
   } catch (error) {
@@ -45,7 +59,10 @@ clubsRouter.get("/:id", async (req, res, next) => {
     const { id } = z.object({ id: z.string() }).parse(req.params);
     const club = await prisma.club.findUnique({
       where: { id },
-      include: { courts: true },
+      select: {
+        ...clubPublicSelect,
+        courts: true,
+      },
     });
 
     if (!club) {
@@ -81,7 +98,12 @@ const courtQuerySchema = z.object({
 courtsRouter.get("/", async (req, res, next) => {
   try {
     const query = courtQuerySchema.parse(req.query);
-    const clubs = await prisma.club.findMany({ include: { courts: true } });
+    const clubs = await prisma.club.findMany({
+      select: {
+        ...clubPublicSelect,
+        courts: true,
+      },
+    });
 
     const results = clubs
       .flatMap((club) =>

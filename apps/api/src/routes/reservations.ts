@@ -24,17 +24,6 @@ const suggestSchema = z.object({
   limit: z.number().int().min(1).max(10).default(5),
 });
 
-type StoredSuggestion = {
-  id: string;
-  request: ReservationRequest;
-  provider: string;
-  estimatedPrice?: number;
-  currency?: string;
-  distanceKm?: number;
-};
-
-const suggestionsStore = new Map<string, StoredSuggestion>();
-
 reservationsRouter.post("/suggest", authGuard, async (req, res, next) => {
   try {
     const payload = suggestSchema.parse(req.body);
@@ -99,13 +88,19 @@ reservationsRouter.post("/suggest", authGuard, async (req, res, next) => {
         if (!availability.available) continue;
 
         const suggestionId = randomUUID();
-        suggestionsStore.set(suggestionId, {
-          id: suggestionId,
-          request,
-          provider: availability.provider,
-          estimatedPrice: availability.estimatedPrice,
-          currency: availability.currency,
-          distanceKm,
+        await prisma.reservationSuggestion.create({
+          data: {
+            id: suggestionId,
+            clubId: club.id,
+            courtId: court.id,
+            userId: auth.uid,
+            start,
+            end,
+            provider: availability.provider,
+            estimatedPrice: availability.estimatedPrice,
+            currency: availability.currency,
+            distanceKm,
+          },
         });
 
         suggestions.push({
@@ -137,41 +132,50 @@ reservationsRouter.post("/:id/confirm", authGuard, async (req, res, next) => {
     const params = z.object({ id: z.string() }).parse(req.params);
     const auth = requireFirebaseUser(req);
 
-    const suggestion = suggestionsStore.get(params.id);
+    const suggestion = await prisma.reservationSuggestion.findUnique({
+      where: { id: params.id },
+    });
     if (!suggestion) {
       res.status(404).json({ error: "Reservation suggestion not found" });
       return;
     }
 
-    if (suggestion.request.userId !== auth.uid) {
+    if (suggestion.userId !== auth.uid) {
       res.status(403).json({ error: "User mismatch for reservation" });
       return;
     }
 
-    const club = await prisma.club.findUnique({ where: { id: suggestion.request.clubId } });
+    const club = await prisma.club.findUnique({ where: { id: suggestion.clubId } });
     if (!club) {
       res.status(404).json({ error: "Club not found" });
       return;
     }
 
     const adapter = getReservationAdapter(club.apiKind);
+    const request: ReservationRequest = {
+      clubId: suggestion.clubId,
+      courtId: suggestion.courtId,
+      start: suggestion.start,
+      end: suggestion.end,
+      userId: suggestion.userId,
+    };
     let booking: ReservationBooking;
     try {
-      booking = await adapter.createBooking(suggestion.request);
+      booking = await adapter.createBooking(request);
     } catch (error) {
       res.status(409).json({ error: "Unable to confirm reservation" });
       return;
     }
 
-    suggestionsStore.delete(params.id);
+    await prisma.reservationSuggestion.delete({ where: { id: params.id } });
 
     res.json({
       bookingId: booking.bookingId,
       provider: booking.provider,
       club: { id: club.id, name: club.name },
-      courtId: suggestion.request.courtId,
-      start: suggestion.request.start,
-      end: suggestion.request.end,
+      courtId: suggestion.courtId,
+      start: suggestion.start,
+      end: suggestion.end,
       estimatedPrice: suggestion.estimatedPrice,
       currency: suggestion.currency,
       distanceKm: suggestion.distanceKm,

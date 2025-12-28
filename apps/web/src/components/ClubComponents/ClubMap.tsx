@@ -1,6 +1,7 @@
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
+import type { ReactElement } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Button } from '../ui/button';
+import { Badge } from '../ui/badge';
 import { 
   MapPin, 
   Phone, 
@@ -53,7 +54,7 @@ export function ClubMap({ clubInfo, isExpanded = false, onToggleExpand }: ClubMa
   };
 
   const getAmenityIcon = (amenity: string) => {
-    const iconMap: { [key: string]: JSX.Element } = {
+    const iconMap: Record<string, ReactElement> = {
       'Parking gratuit': <Car className="h-4 w-4" />,
       'WiFi gratuit': <Wifi className="h-4 w-4" />,
       'Snack-bar': <Coffee className="h-4 w-4" />,

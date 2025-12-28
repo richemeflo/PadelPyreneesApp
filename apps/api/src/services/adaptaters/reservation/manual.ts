@@ -6,22 +6,9 @@ import {
   ReservationBooking,
   ReservationRequest,
 } from "./adapter";
-
-type StoredBooking = {
-  id: string;
-  start: Date;
-  end: Date;
-  userId: string;
-  courtId?: string;
-};
+import { prisma } from "../../../lib/prisma";
 
 const PROVIDER = "manual";
-const reservations = new Map<string, StoredBooking[]>();
-
-const keyFor = (clubId: string, courtId?: string) => `${clubId}::${courtId ?? "_any"}`;
-
-const overlaps = (a: ReservationRequest, b: StoredBooking) =>
-  a.start < b.end && b.start < a.end;
 
 const sanitize = (req: ReservationRequest): ReservationRequest => ({
   ...req,
@@ -38,36 +25,54 @@ const availabilityResponse = (
   conflictingBookingId,
 });
 
+async function findConflict(request: ReservationRequest) {
+  const where = {
+    clubId: request.clubId,
+    ...(request.courtId ? { courtId: request.courtId } : {}),
+    start: { lt: request.end },
+    end: { gt: request.start },
+  };
+
+  const conflict = await prisma.reservation.findFirst({
+    where,
+    select: { id: true },
+  });
+
+  return conflict?.id;
+}
+
+export async function createReservationRecord(request: ReservationRequest, provider: string) {
+  const booking = await prisma.reservation.create({
+    data: {
+      id: randomUUID(),
+      clubId: request.clubId,
+      courtId: request.courtId,
+      start: request.start,
+      end: request.end,
+      userId: request.userId,
+      provider,
+    },
+  });
+
+  return booking;
+}
+
 export const manualReservationAdapter: ReservationAdapter = {
   async checkAvailability(request) {
     const req = sanitize(request);
-    const key = keyFor(req.clubId, req.courtId);
-    const existing = reservations.get(key) ?? [];
-    const conflict = existing.find((slot) => overlaps(req, slot));
+    const conflictId = await findConflict(req);
 
-    return availabilityResponse(!conflict, conflict?.id);
+    return availabilityResponse(!conflictId, conflictId);
   },
 
   async createBooking(request) {
     const req = sanitize(request);
-    const availability = await this.checkAvailability(req);
-
-    if (!availability.available) {
+    const conflictId = await findConflict(req);
+    if (conflictId) {
       throw new Error("Court unavailable for requested slot");
     }
 
-    const key = keyFor(req.clubId, req.courtId);
-    const booking: StoredBooking = {
-      id: randomUUID(),
-      start: req.start,
-      end: req.end,
-      userId: req.userId,
-      courtId: req.courtId,
-    };
-
-    const slots = reservations.get(key) ?? [];
-    slots.push(booking);
-    reservations.set(key, slots);
+    const booking = await createReservationRecord(req, PROVIDER);
 
     const response: ReservationBooking = {
       provider: PROVIDER,

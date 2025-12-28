@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 
@@ -25,8 +26,6 @@ const querySchema = z.object({
   limit: z.coerce.number().positive().max(100).default(50),
   playerId: z.string().optional(),
 });
-
-const tournamentRegistrations = new Map<string, Set<string>>();
 
 tournamentsRouter.post("/", authGuard, async (req, res, next) => {
   try {
@@ -58,17 +57,28 @@ tournamentsRouter.get("/", async (req, res, next) => {
       take: query.limit,
       include: {
         externalClub: true,
+        _count: { select: { registrations: true } },
       },
     });
 
+    const registeredIds = query.playerId
+      ? await prisma.tournamentRegistration.findMany({
+          where: {
+            playerId: query.playerId,
+            tournamentId: { in: tournaments.map((tournament) => tournament.id) },
+          },
+          select: { tournamentId: true },
+        })
+      : [];
+
+    const registeredSet = new Set(registeredIds.map((entry) => entry.tournamentId));
+
     const response = tournaments.map((tournament) => {
-      const registrations = tournamentRegistrations.get(tournament.id);
-      const participantCount = registrations?.size ?? 0;
-      const isRegistered = query.playerId ? registrations?.has(query.playerId) ?? false : false;
+      const { _count, ...rest } = tournament;
       return {
-        ...tournament,
-        participantCount,
-        isRegistered,
+        ...rest,
+        participantCount: _count.registrations,
+        isRegistered: query.playerId ? registeredSet.has(tournament.id) : false,
       };
     });
 
@@ -101,17 +111,37 @@ tournamentsRouter.post("/:id/register", authGuard, async (req, res, next) => {
       return;
     }
 
-    const registrations = tournamentRegistrations.get(id) ?? new Set<string>();
-    if (registrations.has(auth.uid)) {
-      res.status(200).json({ status: "already-registered" });
-      return;
+    try {
+      await prisma.tournamentRegistration.create({
+        data: {
+          tournamentId: id,
+          playerId: auth.uid,
+        },
+      });
+    } catch (error) {
+      if (isUniqueConstraintError(error)) {
+        res.status(200).json({ status: "already-registered" });
+        return;
+      }
+      throw error;
     }
 
-    registrations.add(auth.uid);
-    tournamentRegistrations.set(id, registrations);
+    const participantCount = await prisma.tournamentRegistration.count({
+      where: { tournamentId: id },
+    });
 
-    res.status(201).json({ status: "registered", participants: registrations.size });
+    res.status(201).json({ status: "registered", participants: participantCount });
   } catch (error) {
     next(error);
   }
 });
+
+function isUniqueConstraintError(error: unknown): error is Prisma.PrismaClientKnownRequestError {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+    (error as Prisma.PrismaClientKnownRequestError).code === "P2002"
+  );
+}

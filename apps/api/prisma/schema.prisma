@@ -6,7 +6,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 /**
@@ -35,6 +34,12 @@ model Player {
   ratingHistory RatingHistory[]
 
   matchmakingAvailability MatchmakingAvailability[]
+  scoreSubmissions        MatchScoreSubmission[]
+  scoreConfirmations      MatchScoreConfirmation[]
+  matchReviews            MatchReview[]
+  tournamentRegistrations TournamentRegistration[]
+  reservations            Reservation[]
+  reservationSuggestions  ReservationSuggestion[]
 
   @@index([elo])
 }
@@ -52,6 +57,8 @@ model Club {
 
   // Back-relation vers Court
   courts Court[]
+  reservations           Reservation[]
+  reservationSuggestions ReservationSuggestion[]
 
   // Tournois externes créés par le club (optionnel)
   tournamentsExternal Tournament[] @relation("ExternalClub")
@@ -69,8 +76,8 @@ model Court {
 
   matches Match[]
 
-  // Réservations éventuelles plus tard
-  // reservations Reservation[]
+  reservations           Reservation[]
+  reservationSuggestions ReservationSuggestion[]
 
   @@unique([clubId, name]) // un court "name" unique dans un club
   @@index([clubId])
@@ -81,6 +88,7 @@ model Pair {
 
   lId String
   rId String
+  pairKey String @unique
   l   Player @relation("L", fields: [lId], references: [id])
   r   Player @relation("R", fields: [rId], references: [id])
 
@@ -93,6 +101,9 @@ model Pair {
   proposalsAsRequester MatchProposal[]         @relation("RequesterPair")
   proposalsAsOpponent  MatchProposal[]         @relation("OpponentPair")
   proposalAcceptances  MatchProposalAcceptance[]
+  scoreSubmissionsAsWinner MatchScoreSubmission[]
+  scoreConfirmations      MatchScoreConfirmation[]
+  matchReviewsAsTarget    MatchReview[]
 
   @@unique([lId, rId]) // empêche de créer deux fois la même paire
   @@index([lId])
@@ -116,6 +127,8 @@ model Match {
   createdAt DateTime @default(now())
 
   ratingHistory RatingHistory[]
+  scoreSubmission MatchScoreSubmission?
+  reviews         MatchReview[]
 
   @@index([pairAId])
   @@index([pairBId])
@@ -207,7 +220,112 @@ model Tournament {
   place    String?
   price    Int?
 
+  registrations TournamentRegistration[]
+
   @@index([kind])
   @@index([externalClubId])
   @@index([startsAt])
+}
+
+model MatchScoreSubmission {
+  id           String   @id @default(cuid())
+  matchId      String   @unique
+  match        Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  winnerPairId String
+  winnerPair   Pair     @relation(fields: [winnerPairId], references: [id])
+  score        String
+  submittedBy  String
+  submittedByPlayer Player @relation(fields: [submittedBy], references: [id])
+  createdAt    DateTime @default(now())
+
+  confirmations MatchScoreConfirmation[]
+
+  @@index([winnerPairId])
+  @@index([submittedBy])
+}
+
+model MatchScoreConfirmation {
+  id           String   @id @default(cuid())
+  submissionId String
+  submission   MatchScoreSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  playerId     String
+  player       Player   @relation(fields: [playerId], references: [id])
+  pairId       String
+  pair         Pair     @relation(fields: [pairId], references: [id])
+  acceptedAt   DateTime @default(now())
+
+  @@unique([submissionId, playerId])
+  @@index([pairId])
+  @@index([playerId])
+}
+
+model MatchReview {
+  id             String   @id @default(cuid())
+  matchId        String
+  match          Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  targetPairId   String
+  targetPair     Pair     @relation(fields: [targetPairId], references: [id])
+  authorId       String
+  author         Player   @relation(fields: [authorId], references: [id])
+  fairPlay       Int
+  skill          Int
+  rematchInterest Int
+  comment        String?
+  createdAt      DateTime @default(now())
+
+  @@index([matchId])
+  @@index([authorId])
+}
+
+model TournamentRegistration {
+  id           String   @id @default(cuid())
+  tournamentId String
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  playerId     String
+  player       Player   @relation(fields: [playerId], references: [id])
+  createdAt    DateTime @default(now())
+
+  @@unique([tournamentId, playerId])
+  @@index([playerId])
+}
+
+model ReservationSuggestion {
+  id            String   @id @default(cuid())
+  clubId        String
+  club          Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  courtId       String
+  court         Court    @relation(fields: [courtId], references: [id], onDelete: Cascade)
+  userId        String
+  user          Player   @relation(fields: [userId], references: [id])
+  start         DateTime
+  end           DateTime
+  provider      String
+  estimatedPrice Int?
+  currency      String?
+  distanceKm    Float?
+  createdAt     DateTime @default(now())
+  expiresAt     DateTime?
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model Reservation {
+  id        String   @id @default(cuid())
+  clubId    String
+  club      Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  courtId   String?
+  court     Court?   @relation(fields: [courtId], references: [id])
+  userId    String
+  user      Player   @relation(fields: [userId], references: [id])
+  start     DateTime
+  end       DateTime
+  provider  String
+  createdAt DateTime @default(now())
+
+  @@index([clubId])
+  @@index([courtId])
+  @@index([userId])
+  @@index([start])
+  @@index([end])
 }

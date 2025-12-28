@@ -4,7 +4,7 @@ import {
   ReservationBooking,
   ReservationRequest,
 } from "./adapter";
-import { manualReservationAdapter } from "./manual";
+import { createReservationRecord, manualReservationAdapter } from "./manual";
 
 const PROVIDER = "bruyeres";
 const CURRENCY = "EUR";
@@ -36,10 +36,15 @@ export const bruyeresReservationAdapter: ReservationAdapter = {
   },
 
   async createBooking(request) {
-    const booking = await manualReservationAdapter.createBooking(request);
+    const sanitized: ReservationRequest = {
+      ...request,
+      start: new Date(request.start),
+      end: new Date(request.end),
+    };
+    const booking = await createReservationRecord(sanitized, PROVIDER);
     const response: ReservationBooking = {
-      ...booking,
       provider: PROVIDER,
+      bookingId: booking.id,
     };
     return response;
   },
