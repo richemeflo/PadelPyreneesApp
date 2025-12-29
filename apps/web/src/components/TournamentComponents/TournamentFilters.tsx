@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Search, X, ArrowUpDown, Clock } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
@@ -39,41 +40,43 @@ export function TournamentFilters({
   onClearFilters,
   hasActiveFilters
 }: TournamentFiltersProps) {
+  const { t } = useTranslation();
+
   const typeOptions = [
-    { value: 'all', label: 'Tous les types' },
-    { value: 'singles', label: '👤 Singles' },
-    { value: 'doubles', label: '👥 Doubles' },
-    { value: 'mixed', label: '👫 Mixte' }
+    { value: 'all', label: t('tournamentsPage.filters.types.all') },
+    { value: 'singles', label: `🎯 ${t('tournamentsPage.types.singles')}` },
+    { value: 'doubles', label: `🏓 ${t('tournamentsPage.types.doubles')}` },
+    { value: 'mixed', label: `👥 ${t('tournamentsPage.types.mixed')}` }
   ];
 
   const levelOptions = [
-    { value: 'all', label: 'Tous les niveaux' },
-    { value: 'débutant', label: '🟢 Débutant' },
-    { value: 'intermédiaire', label: '🔵 Intermédiaire' },
-    { value: 'avancé', label: '🟠 Avancé' },
-    { value: 'expert', label: '🔴 Expert' }
+    { value: 'all', label: t('tournamentsPage.filters.levels.all') },
+    { value: 'débutant', label: `🏓 ${t('tournamentsPage.levels.beginner')}` },
+    { value: 'intermédiaire', label: `🥉 ${t('tournamentsPage.levels.intermediate')}` },
+    { value: 'avancé', label: `🥇 ${t('tournamentsPage.levels.advanced')}` },
+    { value: 'expert', label: `💎 ${t('tournamentsPage.levels.expert')}` }
   ];
 
   const statusOptions = [
-    { value: 'all', label: 'Tous les statuts' },
-    { value: 'registration', label: '✅ Inscriptions ouvertes' },
+    { value: 'all', label: t('tournamentsPage.filters.statuses.all') },
+    { value: 'registration', label: `✅ ${t('tournamentsPage.status.registration')}` },
     {
       value: 'upcoming',
       label: (
         <span className="flex items-center gap-1">
-          <Clock className="h-4 w-4" /> À venir
+          <Clock className="h-4 w-4" /> {t('tournamentsPage.status.upcoming')}
         </span>
       )
     },
-    { value: 'ongoing', label: '⌛ En cours' },
-    { value: 'completed', label: '🏆 Terminés' }
+    { value: 'ongoing', label: `⏳ ${t('tournamentsPage.status.ongoing')}` },
+    { value: 'completed', label: `🏆 ${t('tournamentsPage.status.completed')}` }
   ];
 
   const sortOptions = [
-    { value: 'date', label: 'Date' },
-    { value: 'title', label: 'Titre' },
-    { value: 'level', label: 'Niveau' },
-    { value: 'participants', label: 'Participants' }
+    { value: 'date', label: t('tournamentsPage.filters.sort.date') },
+    { value: 'title', label: t('tournamentsPage.filters.sort.title') },
+    { value: 'level', label: t('tournamentsPage.filters.sort.level') },
+    { value: 'participants', label: t('tournamentsPage.filters.sort.participants') }
   ];
 
   return (
@@ -84,7 +87,7 @@ export function TournamentFilters({
           <div className="relative">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Rechercher un tournoi par nom, lieu..."
+              placeholder={t('tournamentsPage.filters.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
               className="pl-10"
@@ -94,7 +97,7 @@ export function TournamentFilters({
           {/* Filtres principaux */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <label className="text-sm">Type de tournoi</label>
+              <label className="text-sm">{t('tournamentsPage.filters.typeLabel')}</label>
               <Select value={selectedType} onValueChange={onTypeChange}>
                 <SelectTrigger>
                   <SelectValue />
@@ -110,7 +113,7 @@ export function TournamentFilters({
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm">Niveau</label>
+              <label className="text-sm">{t('tournamentsPage.filters.levelLabel')}</label>
               <Select value={selectedLevel} onValueChange={onLevelChange}>
                 <SelectTrigger>
                   <SelectValue />
@@ -126,7 +129,7 @@ export function TournamentFilters({
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm">Statut</label>
+              <label className="text-sm">{t('tournamentsPage.filters.statusLabel')}</label>
               <Select value={selectedStatus} onValueChange={onStatusChange}>
                 <SelectTrigger>
                   <SelectValue />
@@ -146,7 +149,7 @@ export function TournamentFilters({
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
             <div className="flex gap-2 items-center">
               <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
-              <label className="text-sm">Trier par:</label>
+              <label className="text-sm">{t('tournamentsPage.filters.sortLabel')}:</label>
               <Select value={sortBy} onValueChange={onSortChange}>
                 <SelectTrigger className="w-auto">
                   <SelectValue />
@@ -164,7 +167,9 @@ export function TournamentFilters({
                 size="sm"
                 onClick={() => onSortOrderChange(sortOrder === 'asc' ? 'desc' : 'asc')}
               >
-                {sortOrder === 'asc' ? '↑' : '↓'}
+                {sortOrder === 'asc'
+                  ? t('tournamentsPage.filters.sort.asc')
+                  : t('tournamentsPage.filters.sort.desc')}
               </Button>
             </div>
 
@@ -177,7 +182,7 @@ export function TournamentFilters({
                 className="flex items-center gap-2"
               >
                 <X className="h-4 w-4" />
-                Effacer les filtres
+                {t('tournamentsPage.filters.clear')}
               </Button>
             )}
           </div>
@@ -187,7 +192,7 @@ export function TournamentFilters({
             <div className="flex flex-wrap gap-2">
               {selectedType !== 'all' && (
                 <Badge variant="secondary" className="flex items-center gap-1">
-                  Type: {typeOptions.find(o => o.value === selectedType)?.label}
+                  {t('tournamentsPage.filters.activeType')}: {typeOptions.find(o => o.value === selectedType)?.label}
                   <X 
                     className="h-3 w-3 cursor-pointer hover:text-destructive" 
                     onClick={() => onTypeChange('all')}
@@ -196,7 +201,7 @@ export function TournamentFilters({
               )}
               {selectedLevel !== 'all' && (
                 <Badge variant="secondary" className="flex items-center gap-1">
-                  Niveau: {levelOptions.find(o => o.value === selectedLevel)?.label}
+                  {t('tournamentsPage.filters.activeLevel')}: {levelOptions.find(o => o.value === selectedLevel)?.label}
                   <X 
                     className="h-3 w-3 cursor-pointer hover:text-destructive" 
                     onClick={() => onLevelChange('all')}
@@ -205,7 +210,7 @@ export function TournamentFilters({
               )}
               {selectedStatus !== 'all' && (
                 <Badge variant="secondary" className="flex items-center gap-1">
-                  Statut: {statusOptions.find(o => o.value === selectedStatus)?.label}
+                  {t('tournamentsPage.filters.activeStatus')}: {statusOptions.find(o => o.value === selectedStatus)?.label}
                   <X 
                     className="h-3 w-3 cursor-pointer hover:text-destructive" 
                     onClick={() => onStatusChange('all')}

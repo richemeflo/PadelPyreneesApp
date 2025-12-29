@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Trophy, Calendar, Hourglass, MapPin, Clock } from 'lucide-react';
 import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -13,6 +14,7 @@ import { mockTournaments } from '../../data/tournamentData';
 import { Tournament, TournamentType, TournamentLevel, TournamentStatus, SortOption } from '../../types/tournament';
 
 export default function TournamentPage() {
+  const { t } = useTranslation();
   const [currentView, setCurrentView] = useState<'list' | 'detail'>('list');
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
   const [registeredTournamentIds, setRegisteredTournamentIds] = useState<Set<string>>(new Set());
@@ -110,7 +112,7 @@ export default function TournamentPage() {
 
   const handleRegister = (tournament: Tournament) => {
     // Simulation d'inscription
-    toast.success(`Inscription au tournoi "${tournament.title}" confirmée !`);
+    toast.success(t('tournamentsPage.toast.registered', { title: tournament.title }));
     setRegisteredTournamentIds(prev => {
       const newSet = new Set(prev);
       newSet.add(tournament.id);
@@ -146,7 +148,7 @@ export default function TournamentPage() {
           <CardContent className="p-4 text-center">
             <Trophy className="h-8 w-8 mx-auto mb-2 text-primary" />
             <p className="text-2xl">{stats.total}</p>
-            <p className="text-sm text-muted-foreground">Total tournois</p>
+            <p className="text-sm text-muted-foreground">{t('tournamentsPage.stats.total')}</p>
           </CardContent>
         </Card>
         
@@ -154,7 +156,7 @@ export default function TournamentPage() {
           <CardContent className="p-4 text-center">
             <Calendar className="h-8 w-8 mx-auto mb-2 text-green-500" />
             <p className="text-2xl">{stats.openRegistration}</p>
-            <p className="text-sm text-muted-foreground">Inscriptions ouvertes</p>
+            <p className="text-sm text-muted-foreground">{t('tournamentsPage.stats.openRegistration')}</p>
           </CardContent>
         </Card>
         
@@ -162,7 +164,7 @@ export default function TournamentPage() {
           <CardContent className="p-4 text-center">
             <Clock className="h-8 w-8 mx-auto mb-2 text-blue-500" />
             <p className="text-2xl">{stats.upcoming}</p>
-            <p className="text-sm text-muted-foreground">À venir</p>
+            <p className="text-sm text-muted-foreground">{t('tournamentsPage.stats.upcoming')}</p>
           </CardContent>
         </Card>
         
@@ -170,26 +172,26 @@ export default function TournamentPage() {
           <CardContent className="p-4 text-center">
             <Hourglass className="h-8 w-8 mx-auto mb-2 text-orange-500" />
             <p className="text-2xl">{stats.ongoing}</p>
-            <p className="text-sm text-muted-foreground">En cours</p>
+            <p className="text-sm text-muted-foreground">{t('tournamentsPage.stats.ongoing')}</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Mes Tournois */}
       <div>
-        <h2 className="mb-4">🎾 Mes Tournois</h2>
+        <h2 className="mb-4">🎾 {t('tournamentsPage.myTournaments.title')}</h2>
         <div className="flex gap-2 mb-4">
           <Button
             variant={myFilter === 'upcoming' ? 'default' : 'outline'}
             onClick={() => setMyFilter('upcoming')}
           >
-            <Clock className="mr-2 h-4 w-4" /> À venir
+            <Clock className="mr-2 h-4 w-4" /> {t('tournamentsPage.myTournaments.upcoming')}
           </Button>
           <Button
             variant={myFilter === 'completed' ? 'default' : 'outline'}
             onClick={() => setMyFilter('completed')}
           >
-            🏁 Terminé
+            🏁 {t('tournamentsPage.myTournaments.completed')}
           </Button>
         </div>
 
@@ -210,8 +212,8 @@ export default function TournamentPage() {
               <Trophy className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="mb-2">
                 {myFilter === 'upcoming'
-                  ? 'Vous êtes inscrit à aucun tournois à venir'
-                  : 'Vous êtes inscrit à aucun tournois passé'}
+                  ? t('tournamentsPage.myTournaments.emptyUpcoming')
+                  : t('tournamentsPage.myTournaments.emptyCompleted')}
               </h3>
             </CardContent>
           </Card>
@@ -221,20 +223,20 @@ export default function TournamentPage() {
       {/* Actions principales */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="mb-2">🏆 Tous les Tournois</h2>
+          <h2 className="mb-2">🏆 {t('tournamentsPage.allTournaments.title')}</h2>
           <p className="text-muted-foreground">
-            Découvrez et participez aux tournois de padel près de chez vous
+            {t('tournamentsPage.allTournaments.subtitle')}
           </p>
         </div>
         
         <div className="flex gap-2">
           <Button variant="outline">
             <MapPin className="h-4 w-4 mr-2" />
-            Carte
+            {t('tournamentsPage.actions.map')}
           </Button>
           <Button>
             <Plus className="h-4 w-4 mr-2" />
-            Organiser un tournoi
+            {t('tournamentsPage.actions.organize')}
           </Button>
         </div>
       </div>
@@ -264,33 +266,33 @@ export default function TournamentPage() {
           size="sm"
           onClick={() => setSelectedStatus(selectedStatus === 'registration' ? 'all' : 'registration')}
         >
-          ✅ Inscriptions ouvertes
+          ✅ {t('tournamentsPage.status.registration')}
         </Button>
         <Button 
           variant={selectedLevel === 'débutant' ? 'default' : 'outline'} 
           size="sm"
           onClick={() => setSelectedLevel(selectedLevel === 'débutant' ? 'all' : 'débutant')}
         >
-          🟢 Débutants
+          🏓 {t('tournamentsPage.quickFilters.beginner')}
         </Button>
         <Button 
           variant={selectedType === 'mixed' ? 'default' : 'outline'} 
           size="sm"
           onClick={() => setSelectedType(selectedType === 'mixed' ? 'all' : 'mixed')}
         >
-          👫 Mixte
+          👥 {t('tournamentsPage.types.mixed')}
         </Button>
       </div>
 
       {/* Résultats */}
       <div className="flex items-center justify-between">
         <p className="text-muted-foreground">
-          {filteredAndSortedTournaments.length} tournoi(s) trouvé(s)
+          {t('tournamentsPage.resultsCount', { count: filteredAndSortedTournaments.length })}
         </p>
         
         {hasActiveFilters && (
           <Badge variant="secondary" className="flex items-center gap-1">
-            Filtres actifs
+            {t('tournamentsPage.filters.activeBadge')}
           </Badge>
         )}
       </div>
@@ -311,12 +313,12 @@ export default function TournamentPage() {
         <Card>
           <CardContent className="p-12 text-center">
             <Trophy className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="mb-2">Aucun tournoi trouvé</h3>
+            <h3 className="mb-2">{t('tournamentsPage.noResultsTitle')}</h3>
             <p className="text-muted-foreground mb-4">
-              Aucun tournoi ne correspond à vos critères de recherche.
+              {t('tournamentsPage.noResultsSubtitle')}
             </p>
             <Button variant="outline" onClick={handleClearFilters}>
-              Réinitialiser les filtres
+              {t('tournamentsPage.actions.resetFilters')}
             </Button>
           </CardContent>
         </Card>
@@ -326,17 +328,17 @@ export default function TournamentPage() {
       <Card className="bg-gradient-to-r from-primary/10 to-blue-500/10 border-primary/20">
         <CardContent className="p-8 text-center">
           <Trophy className="h-12 w-12 mx-auto mb-4 text-primary" />
-          <h3 className="mb-2">Organisez votre propre tournoi</h3>
+          <h3 className="mb-2">{t('tournamentsPage.promotion.title')}</h3>
           <p className="text-muted-foreground mb-6">
-            Créez et gérez facilement vos tournois de padel avec nos outils dédiés
+            {t('tournamentsPage.promotion.description')}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button>
               <Plus className="h-4 w-4 mr-2" />
-              Créer un tournoi
+              {t('tournamentsPage.actions.create')}
             </Button>
             <Button variant="outline">
-              En savoir plus
+              {t('tournamentsPage.actions.learnMore')}
             </Button>
           </div>
         </CardContent>
