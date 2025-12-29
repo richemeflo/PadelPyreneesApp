@@ -1,9 +1,12 @@
-import type { DecodedIdToken } from "firebase-admin/auth";
-
 declare global {
   namespace Express {
     interface Request {
-      firebaseUser?: DecodedIdToken;
+      firebaseUser?: {
+        uid: string;
+        email?: string | null;
+        name?: string | null;
+        provider?: "jwt";
+      };
     }
   }
 }

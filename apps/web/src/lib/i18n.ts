@@ -4,6 +4,8 @@ import i18n from "i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
 import { initReactI18next } from "react-i18next";
 
+const isServer = typeof window === "undefined";
+
 const resources = {
   fr: {
     translation: {
@@ -14,6 +16,39 @@ const resources = {
         matchmaking: "Matchmaking",
         reservations: "Réservations",
         tournaments: "Tournois",
+        login: "Connexion",
+        register: "Inscription",
+        signOut: "Se déconnecter",
+      },
+      auth: {
+        signInTitle: "Connexion",
+        signInSubtitle: "Connectez-vous avec votre email ou votre pseudo.",
+        signInAction: "Se connecter",
+        registerTitle: "Inscription",
+        registerSubtitle: "Créez votre compte PadelPyrenees.",
+        registerAction: "Créer mon compte",
+        identifierLabel: "Email ou pseudo",
+        usernameLabel: "Pseudo",
+        emailLabel: "Email",
+        passwordLabel: "Mot de passe",
+        showPassword: "Afficher le mot de passe",
+        hidePassword: "Masquer le mot de passe",
+        noAccount: "Pas encore de compte ?",
+        haveAccount: "Déjà un compte ?",
+        registerLink: "Créer un compte",
+        signInLink: "Se connecter",
+        errors: {
+          missingFields: "Veuillez remplir tous les champs.",
+          invalidCredentials: "Identifiants invalides.",
+          loginFailed: "Impossible de se connecter.",
+          validationFailed: "Données invalides.",
+          identifierRequired: "Veuillez saisir votre email ou pseudo.",
+          emailInvalid: "Email invalide.",
+          passwordTooShort: "Mot de passe trop court (min {{min}} caracteres).",
+          usernameTooShort: "Pseudo trop court (min {{min}} caracteres).",
+          identifierTaken: "Email ou pseudo deja utilise.",
+          registerFailed: "Impossible de créer le compte.",
+        },
       },
       home: {
         info: "Mes informations",
@@ -92,6 +127,39 @@ const resources = {
         matchmaking: "Matchmaking",
         reservations: "Bookings",
         tournaments: "Tournaments",
+        login: "Sign in",
+        register: "Register",
+        signOut: "Sign out",
+      },
+      auth: {
+        signInTitle: "Sign in",
+        signInSubtitle: "Sign in with your email or username.",
+        signInAction: "Sign in",
+        registerTitle: "Register",
+        registerSubtitle: "Create your PadelPyrenees account.",
+        registerAction: "Create account",
+        identifierLabel: "Email or username",
+        usernameLabel: "Username",
+        emailLabel: "Email",
+        passwordLabel: "Password",
+        showPassword: "Show password",
+        hidePassword: "Hide password",
+        noAccount: "No account yet?",
+        haveAccount: "Already have an account?",
+        registerLink: "Create one",
+        signInLink: "Sign in",
+        errors: {
+          missingFields: "Please fill in all fields.",
+          invalidCredentials: "Invalid credentials.",
+          loginFailed: "Unable to sign in.",
+          validationFailed: "Invalid input.",
+          identifierRequired: "Please enter your email or username.",
+          emailInvalid: "Invalid email address.",
+          passwordTooShort: "Password must be at least {{min}} characters.",
+          usernameTooShort: "Username must be at least {{min}} characters.",
+          identifierTaken: "Email or username already exists.",
+          registerFailed: "Could not create account.",
+        },
       },
       home: {
         info: "My information",
@@ -164,17 +232,23 @@ const resources = {
 };
 
 if (!i18n.isInitialized) {
+  if (!isServer) {
+    i18n.use(LanguageDetector);
+  }
+
   i18n
-    .use(LanguageDetector)
     .use(initReactI18next)
     .init({
       resources,
       fallbackLng: "fr",
+      lng: "fr",
       interpolation: { escapeValue: false },
-      detection: {
-        order: ["querystring", "localStorage", "navigator"],
-        caches: ["localStorage"],
-      },
+      detection: isServer
+        ? undefined
+        : {
+            order: ["querystring", "localStorage", "navigator"],
+            caches: ["localStorage"],
+          },
     })
     .catch((error) => {
       console.error("i18n init failed", error);

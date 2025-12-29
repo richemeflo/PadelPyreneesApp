@@ -1,5 +1,11 @@
 import "@testing-library/jest-native/extend-expect";
+import { act } from "@testing-library/react-native";
+import { notifyManager } from "@tanstack/react-query";
 import "react-native-gesture-handler/jestSetup";
+
+notifyManager.setNotifyFunction((fn) => {
+  act(fn);
+});
 jest.mock("expo-router", () => ({
   ...(() => {
     const React = require("react");

@@ -1,19 +1,25 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 
 import { Card, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
+import { getStoredPlayerId } from "../lib/auth";
 import { fetchMatchmakingProposals, fetchPlayer, fetchTournaments } from "../lib/api";
 
 type PlayerResponse = Awaited<ReturnType<typeof fetchPlayer>>;
 
-const demoPlayerId = process.env.NEXT_PUBLIC_DEMO_PLAYER_ID ?? "";
-
 export default function HomePage() {
   const { t, i18n } = useTranslation();
+  const [playerId, setPlayerId] = useState("");
+
+  useEffect(() => {
+    const storedPlayerId = getStoredPlayerId();
+    const fallbackPlayerId = process.env.NEXT_PUBLIC_DEMO_PLAYER_ID ?? "";
+    setPlayerId(storedPlayerId ?? fallbackPlayerId);
+  }, []);
 
   const {
     data: player,
@@ -21,9 +27,9 @@ export default function HomePage() {
     error: playerError,
     refetch: refetchPlayer,
   } = useQuery<PlayerResponse>({
-    queryKey: ["player", demoPlayerId],
-    queryFn: () => fetchPlayer(demoPlayerId),
-    enabled: Boolean(demoPlayerId),
+    queryKey: ["player", playerId],
+    queryFn: () => fetchPlayer(playerId),
+    enabled: Boolean(playerId),
   });
 
   const primaryPairId = useMemo(() => {
@@ -74,7 +80,9 @@ export default function HomePage() {
     <div className="container mx-auto px-4 py-8 space-y-10">
       <section>
         <h2 className="mb-4 text-xl font-semibold">{t("home.info")}</h2>
-        {playerError ? (
+        {!playerId ? (
+          <p className="text-sm text-muted-foreground">Missing player id. Sign in to continue.</p>
+        ) : playerError ? (
           <ErrorState message={t("common.error")} onRetry={refetchPlayer} />
         ) : (
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">

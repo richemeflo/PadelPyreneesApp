@@ -1,5 +1,7 @@
 import axios from "axios";
 
+import { getStoredIdToken } from "./auth";
+
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000";
 
 export const api = axios.create({
@@ -7,11 +9,20 @@ export const api = axios.create({
 });
 
 function getAuthHeaders() {
-  if (typeof window === "undefined") return {};
-  const token = window.localStorage.getItem("idToken");
+  const token = getStoredIdToken();
   if (!token) return {};
   return { Authorization: `Bearer ${token}` };
 }
+
+type AuthResponse = {
+  token: string;
+  player: {
+    id: string;
+    email: string;
+    pseudo: string;
+    locale: string;
+  };
+};
 
 export async function fetchPlayer(playerId: string) {
   const response = await api.get(`/players/${playerId}`);
@@ -70,4 +81,38 @@ export async function fetchRanking(params: { region?: string; limit?: number } =
       locale?: string;
     }>;
   };
+}
+
+export async function logoutUser() {
+  await api.post(
+    "/auth/logout",
+    {},
+    {
+      headers: getAuthHeaders(),
+    },
+  );
+}
+
+export async function signInUser(payload: { identifier: string; password: string }) {
+  const response = await api.post<AuthResponse>("/auth/login", payload);
+  return response.data;
+}
+
+export async function registerUser(payload: {
+  email: string;
+  pseudo: string;
+  password: string;
+}) {
+  const response = await api.post<AuthResponse>("/auth/register", payload);
+  return response.data;
+}
+
+export async function logNavigation(path: string) {
+  await api.post(
+    "/auth/activity",
+    { path },
+    {
+      headers: getAuthHeaders(),
+    },
+  );
 }

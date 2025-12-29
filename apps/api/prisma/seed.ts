@@ -1,14 +1,17 @@
 import { PrismaClient } from "@prisma/client";
 
+import { hashPassword } from "../src/lib/passwords";
+
 const prisma = new PrismaClient();
 
 async function seedPlayers() {
+  const passwordHash = await hashPassword("demo");
   const players = [
     {
       id: "auth-user-alice",
       email: "alice@example.com",
       pseudo: "PadelAlice",
-      passwordHash: "demo-hash",
+      passwordHash,
       locale: "fr",
       lat: 43.6045,
       lon: 1.444,
@@ -18,7 +21,7 @@ async function seedPlayers() {
       id: "auth-user-bob",
       email: "bob@example.com",
       pseudo: "Bobissimo",
-      passwordHash: "demo-hash",
+      passwordHash,
       locale: "fr",
       lat: 43.2951,
       lon: -0.366,
@@ -28,7 +31,7 @@ async function seedPlayers() {
       id: "auth-user-carol",
       email: "carol@example.com",
       pseudo: "CarolPadel",
-      passwordHash: "demo-hash",
+      passwordHash,
       locale: "es",
       lat: 42.8169,
       lon: -1.6432,
@@ -38,7 +41,7 @@ async function seedPlayers() {
       id: "auth-user-dan",
       email: "dan@example.com",
       pseudo: "DanServe",
-      passwordHash: "demo-hash",
+      passwordHash,
       locale: "en",
       lat: 43.232,
       lon: 0.079,

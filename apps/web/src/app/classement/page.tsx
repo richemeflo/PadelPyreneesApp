@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 
@@ -14,12 +14,18 @@ import { EloChart } from "../../components/RankingComponents/EloChart";
 import { getWinRate, getEvolutionIcon } from "../../components/RankingComponents/utils";
 import { getInitials } from "../../utils/player";
 import { FilterPeriod, PlayerWithHistory } from "../../types/player";
+import { getStoredPlayerId } from "../../lib/auth";
 import { fetchRanking } from "../../lib/api";
-
-const demoPlayerId = process.env.NEXT_PUBLIC_DEMO_PLAYER_ID ?? "";
 
 export default function RankingPage() {
   const { t } = useTranslation();
+  const [playerId, setPlayerId] = useState("");
+
+  useEffect(() => {
+    const storedPlayerId = getStoredPlayerId();
+    const fallbackPlayerId = process.env.NEXT_PUBLIC_DEMO_PLAYER_ID ?? "";
+    setPlayerId(storedPlayerId ?? fallbackPlayerId);
+  }, []);
 
   const {
     data,
@@ -49,8 +55,8 @@ export default function RankingPage() {
 
   const currentUser = useMemo(() => {
     if (!players.length) return undefined;
-    return players.find((player) => player.id === demoPlayerId) ?? players[0];
-  }, [players]);
+    return players.find((player) => player.id === playerId) ?? players[0];
+  }, [players, playerId]);
 
   const topPlayers = useMemo(() => players.slice(0, 3), [players]);
 

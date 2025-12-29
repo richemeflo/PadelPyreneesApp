@@ -2,6 +2,7 @@ import cors from "cors";
 import express, { NextFunction, Request, Response } from "express";
 import { ZodError } from "zod";
 
+import { prisma } from "./lib/prisma";
 import { authRouter } from "./routes/auth";
 import { clubsRouter, courtsRouter } from "./routes/clubs";
 import { matchmakingRouter } from "./routes/matchmaking";
@@ -17,6 +18,14 @@ export function createApp() {
   app.use(express.json());
 
   app.get("/health", (_req: Request, res: Response) => res.json({ ok: true }));
+  app.get("/health/db", async (_req: Request, res: Response) => {
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+      res.json({ ok: true });
+    } catch {
+      res.status(503).json({ ok: false, error: "Database unavailable" });
+    }
+  });
 
   app.use("/auth", authRouter);
   app.use("/players", playersRouter);
