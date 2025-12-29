@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 
-import { Button } from "../ui/button";
 import { clearStoredAuth, getStoredAuth } from "../../lib/auth";
 import { logoutUser } from "../../lib/api";
 
@@ -19,6 +18,7 @@ export function HeaderNav() {
     { href: "/matchmaking", label: t("nav.matchmaking"), requiresAuth: true },
     { href: "/reservations", label: t("nav.reservations"), requiresAuth: true },
     { href: "/tournois", label: t("nav.tournaments"), requiresAuth: true },
+    { href: "/profile", label: t("nav.profile"), requiresAuth: true },
   ];
 
   const authItems = [
@@ -65,9 +65,9 @@ export function HeaderNav() {
               : null}
             {isAuthenticated ? (
               <li>
-                <Button variant="ghost" size="sm" onClick={handleSignOut}>
+                <button type="button" onClick={handleSignOut} className="hover:text-blue-600">
                   {t("nav.signOut")}
-                </Button>
+                </button>
               </li>
             ) : null}
           </ul>

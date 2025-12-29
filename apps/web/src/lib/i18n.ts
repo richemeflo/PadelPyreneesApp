@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import i18n from "i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
@@ -16,6 +16,7 @@ const resources = {
         matchmaking: "Matchmaking",
         reservations: "Réservations",
         tournaments: "Tournois",
+        profile: "Profil",
         login: "Connexion",
         register: "Inscription",
         signOut: "Se déconnecter",
@@ -48,6 +49,30 @@ const resources = {
           usernameTooShort: "Pseudo trop court (min {{min}} caracteres).",
           identifierTaken: "Email ou pseudo deja utilise.",
           registerFailed: "Impossible de créer le compte.",
+        },
+      },
+      profile: {
+        title: "Mon profil",
+        subtitle: "Mettez a jour vos informations et parametres.",
+        infoTitle: "Informations",
+        settingsTitle: "Parametres",
+        saveAction: "Enregistrer",
+        saving: "Enregistrement...",
+        saveSuccess: "Profil mis a jour.",
+        saveError: "Impossible d'enregistrer le profil.",
+        missingUser: "Utilisateur introuvable.",
+        invalidCoordinates: "Coordonnees invalides.",
+        localePlaceholder: "Choisir une langue",
+        fields: {
+          pseudo: "Pseudo",
+          email: "Email",
+          locale: "Langue",
+          lat: "Latitude",
+          lon: "Longitude",
+        },
+        languages: {
+          fr: "Francais",
+          en: "Anglais",
         },
       },
       home: {
@@ -127,6 +152,7 @@ const resources = {
         matchmaking: "Matchmaking",
         reservations: "Bookings",
         tournaments: "Tournaments",
+        profile: "Profile",
         login: "Sign in",
         register: "Register",
         signOut: "Sign out",
@@ -159,6 +185,30 @@ const resources = {
           usernameTooShort: "Username must be at least {{min}} characters.",
           identifierTaken: "Email or username already exists.",
           registerFailed: "Could not create account.",
+        },
+      },
+      profile: {
+        title: "Profile",
+        subtitle: "Update your information and settings.",
+        infoTitle: "Information",
+        settingsTitle: "Settings",
+        saveAction: "Save changes",
+        saving: "Saving...",
+        saveSuccess: "Profile updated.",
+        saveError: "Unable to save profile.",
+        missingUser: "User not found.",
+        invalidCoordinates: "Invalid coordinates.",
+        localePlaceholder: "Select a language",
+        fields: {
+          pseudo: "Username",
+          email: "Email",
+          locale: "Language",
+          lat: "Latitude",
+          lon: "Longitude",
+        },
+        languages: {
+          fr: "French",
+          en: "English",
         },
       },
       home: {
@@ -256,3 +306,4 @@ if (!i18n.isInitialized) {
 }
 
 export { i18n };
+

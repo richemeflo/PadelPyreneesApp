@@ -29,6 +29,16 @@ export async function fetchPlayer(playerId: string) {
   return response.data;
 }
 
+export async function updatePlayer(
+  playerId: string,
+  payload: { pseudo?: string; locale?: string; lat?: number; lon?: number },
+) {
+  const response = await api.patch(`/players/${playerId}`, payload, {
+    headers: getAuthHeaders(),
+  });
+  return response.data;
+}
+
 export async function fetchTournaments(limit = 5) {
   const response = await api.get("/tournaments", {
     params: { limit },
