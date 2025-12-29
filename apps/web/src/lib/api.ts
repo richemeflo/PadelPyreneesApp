@@ -31,12 +31,37 @@ export async function fetchPlayer(playerId: string) {
 
 export async function updatePlayer(
   playerId: string,
-  payload: { pseudo?: string; locale?: string; lat?: number; lon?: number },
+  payload: { pseudo?: string; locale?: string },
 ) {
   const response = await api.patch(`/players/${playerId}`, payload, {
     headers: getAuthHeaders(),
   });
   return response.data;
+}
+
+export async function updatePlayerAddress(payload: {
+  streetNumber?: string;
+  streetName: string;
+  city: string;
+  postalCode: string;
+  country: string;
+}) {
+  const response = await api.put("/players/me/address", payload, {
+    headers: getAuthHeaders(),
+  });
+  return response.data as {
+    id: string;
+    lat: number | null;
+    lon: number | null;
+    address: {
+      streetNumber?: string | null;
+      streetName: string;
+      city: string;
+      postalCode: string;
+      country: string;
+      formattedAddress?: string | null;
+    };
+  };
 }
 
 export async function fetchTournaments(limit = 5) {

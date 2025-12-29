@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "../../components/ui/select";
 import { getStoredPlayerId } from "../../lib/auth";
-import { fetchPlayer, updatePlayer } from "../../lib/api";
+import { fetchPlayer, updatePlayer, updatePlayerAddress } from "../../lib/api";
 
 type PlayerResponse = Awaited<ReturnType<typeof fetchPlayer>>;
 
@@ -28,8 +28,12 @@ export default function ProfilePage() {
   const [pseudo, setPseudo] = useState("");
   const [email, setEmail] = useState("");
   const [locale, setLocale] = useState(i18n.language ?? "fr");
-  const [lat, setLat] = useState("");
-  const [lon, setLon] = useState("");
+  const [streetNumber, setStreetNumber] = useState("");
+  const [streetName, setStreetName] = useState("");
+  const [city, setCity] = useState("");
+  const [postalCode, setPostalCode] = useState("");
+  const [country, setCountry] = useState("");
+  const [formattedAddress, setFormattedAddress] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -50,8 +54,12 @@ export default function ProfilePage() {
     setPseudo(player.pseudo ?? "");
     setEmail(player.email ?? "");
     setLocale(player.locale ?? i18n.language ?? "fr");
-    setLat(player.lat !== null && player.lat !== undefined ? String(player.lat) : "");
-    setLon(player.lon !== null && player.lon !== undefined ? String(player.lon) : "");
+    setStreetNumber(player.streetNumber ?? "");
+    setStreetName(player.streetName ?? "");
+    setCity(player.city ?? "");
+    setPostalCode(player.postalCode ?? "");
+    setCountry(player.country ?? "");
+    setFormattedAddress(player.formattedAddress ?? "");
   }, [player, i18n.language]);
 
   const localeOptions = useMemo(
@@ -72,7 +80,7 @@ export default function ProfilePage() {
       return;
     }
 
-    const payload: { pseudo?: string; locale?: string; lat?: number; lon?: number } = {};
+    const payload: { pseudo?: string; locale?: string } = {};
     const trimmedPseudo = pseudo.trim();
     if (trimmedPseudo) {
       payload.pseudo = trimmedPseudo;
@@ -81,27 +89,67 @@ export default function ProfilePage() {
       payload.locale = locale;
     }
 
-    if (lat.trim() !== "") {
-      const parsedLat = Number.parseFloat(lat);
-      if (Number.isNaN(parsedLat)) {
-        setError(t("profile.invalidCoordinates"));
-        return;
-      }
-      payload.lat = parsedLat;
-    }
+    const trimmedStreetNumber = streetNumber.trim();
+    const trimmedStreetName = streetName.trim();
+    const trimmedCity = city.trim();
+    const trimmedPostalCode = postalCode.trim();
+    const trimmedCountry = country.trim().toUpperCase();
+    const hasAddressInput = [
+      trimmedStreetNumber,
+      trimmedStreetName,
+      trimmedCity,
+      trimmedPostalCode,
+      trimmedCountry,
+    ].some((value) => value !== "");
+    const hasAddressChanges = player
+      ? trimmedStreetNumber !== String(player.streetNumber ?? "").trim() ||
+        trimmedStreetName !== String(player.streetName ?? "").trim() ||
+        trimmedCity !== String(player.city ?? "").trim() ||
+        trimmedPostalCode !== String(player.postalCode ?? "").trim() ||
+        trimmedCountry !== String(player.country ?? "").trim().toUpperCase()
+      : hasAddressInput;
+    let addressPayload:
+      | {
+          streetNumber?: string;
+          streetName: string;
+          city: string;
+          postalCode: string;
+          country: string;
+        }
+      | undefined;
 
-    if (lon.trim() !== "") {
-      const parsedLon = Number.parseFloat(lon);
-      if (Number.isNaN(parsedLon)) {
-        setError(t("profile.invalidCoordinates"));
+    if (hasAddressInput && hasAddressChanges) {
+      if (!trimmedStreetName || !trimmedCity || !trimmedPostalCode || !trimmedCountry) {
+        setError(t("profile.invalidAddress"));
         return;
       }
-      payload.lon = parsedLon;
+
+      addressPayload = {
+        streetNumber: trimmedStreetNumber ? trimmedStreetNumber : undefined,
+        streetName: trimmedStreetName,
+        city: trimmedCity,
+        postalCode: trimmedPostalCode,
+        country: trimmedCountry,
+      };
     }
 
     setIsSaving(true);
     try {
-      await updatePlayer(playerId, payload);
+      const requests: Array<Promise<unknown>> = [];
+      if (Object.keys(payload).length > 0) {
+        requests.push(updatePlayer(playerId, payload));
+      }
+      if (addressPayload) {
+        requests.push(
+          updatePlayerAddress(addressPayload).then((response) => {
+            setFormattedAddress(response.address.formattedAddress ?? "");
+          }),
+        );
+      }
+
+      if (requests.length > 0) {
+        await Promise.all(requests);
+      }
       await queryClient.invalidateQueries({ queryKey: ["player", playerId] });
       if (payload.locale && payload.locale !== i18n.language) {
         await i18n.changeLanguage(payload.locale);
@@ -145,26 +193,68 @@ export default function ProfilePage() {
                     <Label htmlFor="email">{t("profile.fields.email")}</Label>
                     <Input id="email" value={email} disabled />
                   </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h2 className="text-lg font-semibold">{t("profile.addressTitle")}</h2>
+                <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="lat">{t("profile.fields.lat")}</Label>
+                    <Label htmlFor="streetNumber">{t("profile.fields.streetNumber")}</Label>
                     <Input
-                      id="lat"
-                      type="number"
-                      value={lat}
-                      onChange={(event) => setLat(event.target.value)}
-                      inputMode="decimal"
+                      id="streetNumber"
+                      value={streetNumber}
+                      onChange={(event) => setStreetNumber(event.target.value)}
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="lon">{t("profile.fields.lon")}</Label>
+                    <Label htmlFor="streetName">{t("profile.fields.streetName")}</Label>
                     <Input
-                      id="lon"
-                      type="number"
-                      value={lon}
-                      onChange={(event) => setLon(event.target.value)}
-                      inputMode="decimal"
+                      id="streetName"
+                      value={streetName}
+                      onChange={(event) => setStreetName(event.target.value)}
+                      autoCapitalize="words"
                     />
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="city">{t("profile.fields.city")}</Label>
+                    <Input
+                      id="city"
+                      value={city}
+                      onChange={(event) => setCity(event.target.value)}
+                      autoCapitalize="words"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="postalCode">{t("profile.fields.postalCode")}</Label>
+                    <Input
+                      id="postalCode"
+                      value={postalCode}
+                      onChange={(event) => setPostalCode(event.target.value)}
+                      inputMode="numeric"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="country">{t("profile.fields.country")}</Label>
+                    <Input
+                      id="country"
+                      value={country}
+                      onChange={(event) => setCountry(event.target.value)}
+                      maxLength={2}
+                      autoCapitalize="characters"
+                      autoCorrect="off"
+                      spellCheck={false}
+                    />
+                  </div>
+                  {formattedAddress ? (
+                    <div className="space-y-2 md:col-span-2">
+                      <Label htmlFor="formattedAddress">{t("profile.fields.formattedAddress")}</Label>
+                      <Input id="formattedAddress" value={formattedAddress} disabled />
+                    </div>
+                  ) : null}
                 </div>
               </div>
 

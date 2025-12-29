@@ -1,11 +1,13 @@
 import request from "supertest";
 
 import { app } from "../../app";
+import { signAuthToken } from "../../lib/jwt";
 import { updateElo } from "../../services/elo";
 import { mockVerifyIdToken } from "../../test-utils/firebase";
 import { prismaMock } from "../../test-utils/prisma";
 
-const authHeader = "Bearer test-token";
+const buildAuthHeader = (uid: string, email: string) =>
+  `Bearer ${signAuthToken({ uid, email })}`;
 
 const createMatchFixture = () => {
   const playerA1 = { id: "player-a1", elo: 1200 };
@@ -53,7 +55,7 @@ describe("matches routes", () => {
 
     const response = await request(app)
       .post("/matches")
-      .set("Authorization", authHeader)
+      .set("Authorization", buildAuthHeader(pairA.l.id, "player-a1@test.com"))
       .send({
         pairAId: pairA.id,
         pairBId: pairB.id,
@@ -96,7 +98,7 @@ describe("matches routes", () => {
 
     const response = await request(app)
       .post(`/matches/${match.id}/submit-score`)
-      .set("Authorization", authHeader)
+      .set("Authorization", buildAuthHeader(playerA1.id, "player-a1@test.com"))
       .send({ winnerPairId: pairA.id, score: "6-4 6-4" });
 
     expect(response.status).toBe(200);
@@ -143,7 +145,7 @@ describe("matches routes", () => {
 
     const response = await request(app)
       .post(`/matches/${match.id}/confirm-score`)
-      .set("Authorization", authHeader)
+      .set("Authorization", buildAuthHeader(playerA1.id, "player-a1@test.com"))
       .send({ accept: false });
 
     expect(response.status).toBe(200);
@@ -211,7 +213,7 @@ describe("matches routes", () => {
 
     const response = await request(app)
       .post(`/matches/${match.id}/confirm-score`)
-      .set("Authorization", authHeader)
+      .set("Authorization", buildAuthHeader(playerB1.id, "player-b1@test.com"))
       .send({ accept: true });
 
     expect(response.status).toBe(200);
@@ -266,7 +268,7 @@ describe("matches routes", () => {
 
     const response = await request(app)
       .post(`/matches/${match.id}/review`)
-      .set("Authorization", authHeader)
+      .set("Authorization", buildAuthHeader(playerA1.id, "player-a1@test.com"))
       .send({
         targetPairId: pairB.id,
         fairPlay: 5,

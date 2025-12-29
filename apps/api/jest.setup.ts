@@ -3,6 +3,7 @@ import { prismaMock } from "./src/test-utils/prisma";
 
 process.env.NODE_ENV = "test";
 process.env.TZ = "UTC";
+process.env.JWT_SECRET = "test-secret";
 
 jest.mock("firebase-admin", () => ({
   __esModule: true,

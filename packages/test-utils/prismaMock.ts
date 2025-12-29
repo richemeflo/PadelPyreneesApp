@@ -27,6 +27,7 @@ export type PrismaMock = {
   reservation: ModelMock;
   reservationSuggestion: ModelMock;
   $transaction: jest.Mock;
+  $queryRaw: jest.Mock;
   $connect: jest.Mock;
   $disconnect: jest.Mock;
   $on: jest.Mock;
@@ -63,6 +64,7 @@ export function createPrismaMock(): PrismaMock {
     reservation: createModelMock(),
     reservationSuggestion: createModelMock(),
     $transaction: jest.fn(),
+    $queryRaw: jest.fn(),
     $connect: jest.fn(),
     $disconnect: jest.fn(),
     $on: jest.fn(),

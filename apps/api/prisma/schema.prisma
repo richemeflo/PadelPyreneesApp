@@ -22,11 +22,18 @@ model Player {
   locale       String   @default("fr")
   lat          Float?
   lon          Float?
+  streetNumber String?  @map("street_number")
+  streetName   String   @default("") @map("street_name")
+  city         String   @default("")
+  postalCode   String   @default("") @map("postal_code")
+  country      String   @default("")
+  formattedAddress String? @map("formatted_address")
+  homeLocation Unsupported("geography(Point, 4326)")? @map("home_location")
   elo          Int      @default(1000)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  // Back-relations vers Pair (2 relations nommées L et R)
+  // Back-relations vers Pair (2 relations nomm?es L et R)
   pairsAsA Pair[] @relation("L")
   pairsAsB Pair[] @relation("R")
 
@@ -43,6 +50,9 @@ model Player {
   authEvents              AuthEvent[]
 
   @@index([elo])
+  @@index([homeLocation], type: Gist)
+  @@index([city])
+  @@index([postalCode])
 }
 
 model Club {
@@ -50,6 +60,11 @@ model Club {
   name      String
   logoUrl   String?
   address   String
+  city      String   @default("")
+  postalCode String @default("") @map("postal_code")
+  country   String   @default("")
+  formattedAddress String? @map("formatted_address")
+  location  Unsupported("geography(Point, 4326)")? @map("location")
   lat       Float
   lon       Float
   apiKind   String? // 'viapadel' | 'bruyeres' | 'manual' | ...
@@ -61,11 +76,14 @@ model Club {
   reservations           Reservation[]
   reservationSuggestions ReservationSuggestion[]
 
-  // Tournois externes créés par le club (optionnel)
+  // Tournois externes cr??s par le club (optionnel)
   tournamentsExternal Tournament[] @relation("ExternalClub")
 
   @@unique([name, address])
   @@index([lat, lon])
+  @@index([location], type: Gist)
+  @@index([city])
+  @@index([postalCode])
 }
 
 model Court {
@@ -205,7 +223,7 @@ model Tournament {
   // kind: 'internal' | 'external'
   kind String
 
-  // INTERNAL: créé par un admin (stocke son id si besoin), EXTERNAL: par un club
+  // INTERNAL: cr?? par un admin (stocke son id si besoin), EXTERNAL: par un club
   createdBy String?
 
   // Relation vers Club si EXTERNAL
@@ -219,6 +237,11 @@ model Tournament {
   startsAt DateTime
   endsAt   DateTime
   place    String?
+  city     String   @default("")
+  postalCode String @default("") @map("postal_code")
+  country  String   @default("")
+  formattedAddress String? @map("formatted_address")
+  location Unsupported("geography(Point, 4326)")? @map("location")
   price    Int?
 
   registrations TournamentRegistration[]
@@ -226,6 +249,9 @@ model Tournament {
   @@index([kind])
   @@index([externalClubId])
   @@index([startsAt])
+  @@index([location], type: Gist)
+  @@index([city])
+  @@index([postalCode])
 }
 
 model MatchScoreSubmission {
@@ -345,3 +371,4 @@ model AuthEvent {
   @@index([type])
   @@index([createdAt])
 }
+
