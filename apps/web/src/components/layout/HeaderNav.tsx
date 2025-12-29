@@ -4,13 +4,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 
-import { clearStoredAuth, getStoredAuth } from "../../lib/auth";
+import { clearStoredAuth } from "../../lib/auth";
 import { logoutUser } from "../../lib/api";
+import { useAuthState } from "../../lib/useAuthState";
 
 export function HeaderNav() {
   const { t } = useTranslation();
   const router = useRouter();
-  const isAuthenticated = Boolean(getStoredAuth());
+  const { isAuthenticated } = useAuthState();
 
   const navItems = [
     { href: "/", label: t("nav.home"), requiresAuth: true },
